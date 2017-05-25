@@ -1,5 +1,6 @@
 package com.player;
 
+import com.player.model.UserConnectionStatus;
 import com.player.parseModel.ConnectionStatus;
 import com.player.parseModel.DeviceSettings;
 
@@ -8,19 +9,17 @@ import com.player.parseModel.DeviceSettings;
  */
 public class DataSingleton {
 
-    private static DataSingleton mInstance = null;
     public ConnectionStatus mConnectionStatus;
     public DeviceSettings mDeviceSettings;
 
-    private DataSingleton(){
+    public UserConnectionStatus userConnectionStatus;
+
+    public DataSingleton(){
 
     }
 
     public static DataSingleton getInstance(){
-        if (mInstance == null){
-            mInstance = new DataSingleton();
-        }
-        return  mInstance;
+        return new DataSingleton();
     }
 
 }

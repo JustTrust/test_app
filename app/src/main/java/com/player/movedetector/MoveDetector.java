@@ -1,21 +1,25 @@
 package com.player.movedetector;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseInstallation;
@@ -51,15 +55,14 @@ public class MoveDetector implements SensorEventListener {
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private long previousUpdate;
-
+    private GoogleApiClient googleApiClient;
     private static boolean mIs_GPSSetting = false;
-    private LocationClient m_locationClient;
-    private LocationRequest m_locationRequest;
+
     private boolean mIsSending = false;
 
-    public MoveDetector(String deviceID) {
+    public MoveDetector(GoogleApiClient googleApiClient) {
+        this.googleApiClient = googleApiClient;
         init();
-        getCountryInfoFromLocation(PlayerApplication.getContext());
     }
 
     public void setGPSEnabled(boolean isEnabled) {
@@ -68,11 +71,11 @@ public class MoveDetector implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (mIs_GPSSetting == true && PlayerActivity.mIs_GPSEnabled == true) {
+        if (mIs_GPSSetting && PlayerActivity.mIs_GPSEnabled) {
             mAccelerometer = event.sensor;
             if (mAccelerometer.getType() == Sensor.TYPE_ACCELEROMETER) {
                 long currentTime = System.currentTimeMillis();
-                if(previousUpdate == 0){
+                if (previousUpdate == 0) {
                     previousUpdate = currentTime;
                     x = event.values[0];
                     y = event.values[1];
@@ -87,35 +90,33 @@ public class MoveDetector implements SensorEventListener {
                     x = event.values[0];
                     y = event.values[1];
                     z = event.values[2];
-                    Log.i("ACCERATION","x "+x+" y "+y+" z "+z);
+                    Log.i("ACCERATION", "x " + x + " y " + y + " z " + z);
                     if (Math.abs(previousX - x) > ACCELEROMETER_SENSITIVITY ||
                             Math.abs(previousY - y) > ACCELEROMETER_SENSITIVITY ||
                             Math.abs(previousZ - z) > ACCELEROMETER_SENSITIVITY) {
-                        Log.i("ACCERATION2","over threshold "+"x "+x+" y "+y+" z "+z+ "  --- "+previousX+" "+previousY+" "+previousZ);
-                        if (mIsSending == false && m_locationRequest != null) {
+                        Log.i("ACCERATION1", "over threshold " + "x " + x + " y " + y + " z " + z + "  --- " + previousX + " " + previousY + " " + previousZ);
+                        if (!mIsSending && googleApiClient != null && googleApiClient.isConnected()) {
                             mIsSending = true;
-                            m_locationClient.requestLocationUpdates(m_locationRequest, new LocationListener() {
-                                @Override
-                                public void onLocationChanged(Location location) {
-                                    Log.i("ACCERATION2",location.toString());
-                                    //if (mIs_GPSSetting == true && PlayerActivity.mIs_GPSEnabled == true) {
-                                        m_locationClient.removeLocationUpdates(this);
-                                        sendPushNotification(location.getLatitude(), location.getLongitude());
-                                        saveData(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()));
-										
-										//Start recording
-                                        Intent videoRecorderService = new Intent(PlayerApplication.getContext(), BackgroundVideoRecordingService.class);
-                                        PlayerApplication.getContext().startService(videoRecorderService);
-                                //    }
-                                }
-                            });
+
+                            @SuppressLint("MissingPermission")
+                            Location currentLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+                            if (currentLocation != null) {
+                                Log.i("ACCERATION2", "send data");
+                                sendPushNotification(currentLocation.getLatitude(), currentLocation.getLongitude());
+                                saveData(String.valueOf(currentLocation.getLatitude()), String.valueOf(currentLocation.getLongitude()));
+
+                                //Start recording
+                                Intent videoRecorderService = new Intent(PlayerApplication.getContext(), BackgroundVideoRecordingService.class);
+                                PlayerApplication.getContext().startService(videoRecorderService);
+                            }
                         }
                     }
                 }
             }
         }
     }
-    private void saveData(final String latitude,final String longitude){
+
+    private void saveData(final String latitude, final String longitude) {
         ParseQuery<ConnectionStatus> m_connectionQuery = ConnectionStatus.getQuery();
         m_connectionQuery.whereEqualTo(AppConstant.FIELD_DEVICE_ID, ParseUser.getCurrentUser().getObjectId());
         m_connectionQuery.cancel();
@@ -133,6 +134,7 @@ public class MoveDetector implements SensorEventListener {
         });
 
     }
+
     /**
      * @param latitude
      * @param longitude
@@ -183,23 +185,5 @@ public class MoveDetector implements SensorEventListener {
             mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         }
-    }
-
-    public void getCountryInfoFromLocation(final Context context) {
-        m_locationClient = new LocationClient(context, new GooglePlayServicesClient.ConnectionCallbacks() {
-            @Override
-            public void onConnected(Bundle bundle) {
-                m_locationRequest = LocationRequest.create();
-            }
-
-            @Override
-            public void onDisconnected() {
-            }
-        }, new GooglePlayServicesClient.OnConnectionFailedListener() {
-            @Override
-            public void onConnectionFailed(ConnectionResult connectionResult) {
-            }
-        });
-        m_locationClient.connect();
     }
 }

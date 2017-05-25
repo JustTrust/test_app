@@ -1,17 +1,23 @@
 package com.player.ui.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,17 +33,18 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Places;
 import com.parse.GetCallback;
 import com.parse.ParseException;
-import com.parse.ParseInstallation;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
-import com.parse.SaveCallback;
 import com.player.AppConstant;
 import com.player.DataSingleton;
 import com.player.PlayerApplication;
 import com.player.R;
-import com.player.alarms.PlaySongs;
 import com.player.alarms.PlaySongsN;
 import com.player.alarms.StartTime;
 import com.player.alarms.TimerWakeLock;
@@ -60,22 +67,17 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
+import javax.inject.Inject;
 
 /**
  * @desc PlayerActivity for player interface
  */
-public class PlayerActivity extends Activity {
+public class PlayerActivity extends Activity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
     private static final String LOG_TAG = PlayerActivity.class.getName();
+    private static final int PERMISSIONS_REQUEST_LOCATION = 12;
 
     public static PlayerActivity instance;
     private TextView mTxt_songInterval;
@@ -99,12 +101,16 @@ public class PlayerActivity extends Activity {
     private int remainTime;
     private ProgressDialog mPrgDlg;
     private DeviceSettings mDeviceSettings;
+    private GoogleApiClient googleApiClient;
+
+    @Inject
+    DataSingleton dataSingleton;
 
     private Handler statusHandler = new Handler() {
         public void handleMessage(Message m) {
-            switch(m.what) {
-                case HANDLER_PLAYER : {
-                    if(playSongs != null) {
+            switch (m.what) {
+                case HANDLER_PLAYER: {
+                    if (playSongs != null) {
                         playSongs.checkPlayStatus();
                     }
 
@@ -112,30 +118,32 @@ public class PlayerActivity extends Activity {
                 }
                 break;
 
-                case HANDLER_STATUS : {
+                case HANDLER_STATUS: {
                     setSendingConnSetting();
                     statusHandler.sendEmptyMessageDelayed(HANDLER_STATUS, 1000);
                 }
                 break;
             }
-         }
+        }
     };
 
     private static final int HANDLER_PLAYER = 0;
     private static final int HANDLER_STATUS = 1;
 
-    AudioManager am ;
+    AudioManager am;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PlayerApplication.getAppComponent().inject(this);
         setContentView(R.layout.activity_main);
         instance = this;
-        registerInstallation();
         getMusicsFromStorage();
         initUI();
         initMoveDector();
-        getActionBar().setTitle(ParseUser.getCurrentUser().getUsername());
-        m_connectionQuery.whereEqualTo(AppConstant.FIELD_DEVICE_ID, ParseUser.getCurrentUser().getObjectId());
+        String userName = getIntent().getStringExtra(LoginActivity.USER_NAME);
+        if (userName == null) throw new IllegalStateException("Start PlayerActivity without user");
+        getActionBar().setTitle(userName);
         TimerWakeLock.acquireCpuWakeLock(PlayerApplication.getContext());
 
         am = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -149,12 +157,14 @@ public class PlayerActivity extends Activity {
         super.onStart();
         setSendingConnSetting();
         EventBus.getDefault().register(this);
+        updateLocation();
     }
 
     @Override
     protected void onStop() {
         EventBus.getDefault().unregister(this);
         super.onStop();
+        stopLocationUpdate();
     }
 
     @SuppressWarnings("unused")
@@ -172,26 +182,20 @@ public class PlayerActivity extends Activity {
 
     // init location moveDector
     private void initMoveDector() {
-        mMove_dector = new MoveDetector(ParseUser.getCurrentUser().getObjectId());
+        mMove_dector = new MoveDetector(googleApiClient); //ParseUser.getCurrentUser().getObjectId()
     }
 
-    public class UpdateStatusTask extends TimerTask {
-        public void run() {
-
-        }
-    }
 
     private boolean progress;
 
     private void setSendingConnSetting() {
         Log.d(LOG_TAG, "setSendingConnSetting: isPlaying " + isPlaying);
 
-        if (!NetworkUtil.isOnline(instance)) {
+        if (!NetworkUtil.isOnline(this)) {
             return;
         }
 
-        if(progress)
-            return;
+        if (progress) return;
 
         progress = true;
         m_connectionQuery.getFirstInBackground(new GetCallback<ConnectionStatus>() {
@@ -202,8 +206,8 @@ public class PlayerActivity extends Activity {
                     conInfo.setSong(mStr_Song);
                     conInfo.setIsPlaying(isPlaying);
                     conInfo.setRemain(remainTime);
-                    int volume_level= am.getStreamVolume(AudioManager.STREAM_MUSIC);
-                    System.out.println("volume_level = " + volume_level);
+                    int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+                    //System.out.println("volume_level = " + volume_level);
                     conInfo.setVolume(String.valueOf(volume_level));
                     if (conInfo.getGPSEnabled() != mIs_GPSEnabled) {
                         runOnUiThread(new Runnable() {
@@ -221,20 +225,11 @@ public class PlayerActivity extends Activity {
                         mMove_dector.setGPSEnabled(mIs_GPSEnabled);
                     }
 
-                    DataSingleton.getInstance().mConnectionStatus = conInfo;
+                    dataSingleton.mConnectionStatus = conInfo;
                     conInfo.saveInBackground();
                 }
             }
         });
-    }
-
-
-
-
-    private void registerInstallation() {
-        ParseInstallation currentInstall = ParseInstallation.getCurrentInstallation();
-        currentInstall.put(AppConstant.FIELD_DEVICE_ID, ParseUser.getCurrentUser().getObjectId());
-        currentInstall.saveInBackground();
     }
 
     // get list of media file from sdcard
@@ -262,8 +257,6 @@ public class PlayerActivity extends Activity {
             } while (mCursor.moveToNext());
         }
         mCursor.close();
-
-
     }
 
     private void initUI() {
@@ -338,11 +331,10 @@ public class PlayerActivity extends Activity {
     }
 
     private void playNow(Intent playerInfo) {
-        if(playSongs == null) {
+        if (playSongs == null) {
             playSongs = new PlaySongsN();
             playSongs.onStartCommand(playerInfo);
-        }
-        else {
+        } else {
             playSongs.resume();
         }
     }
@@ -351,10 +343,9 @@ public class PlayerActivity extends Activity {
 
         runOnUiThread(new Runnable() {
             public void run() {
-                if(status != PlaySongsN.STATUS_PLAYING) {
+                if (status != PlaySongsN.STATUS_PLAYING) {
                     setAppStatus(AppConstant.PAUSE);
-                }
-                else {
+                } else {
                     setAppStatus(AppConstant.PLAYING);
                 }
                 setRemainTime(remainTime);
@@ -404,13 +395,12 @@ public class PlayerActivity extends Activity {
         }
     }
 
-
     private boolean isPlayNow(NotificationMessage data) {
 
         int nStartTime = data.getStartTime().getHour() * 60 + data.getStartTime().getMinute();
         int nEndTime = data.getEndTime().getHour() * 60 + data.getEndTime().getMinute();
 
-        if(data.getRealStartTime() != null) {
+        if (data.getRealStartTime() != null) {
             nStartTime = data.getRealStartTime().getHour() * 60 + data.getRealStartTime().getMinute();
         }
 
@@ -420,13 +410,11 @@ public class PlayerActivity extends Activity {
             return true;
         } else if ((nStartTime > nEndTime) && (nCurrentTime >= nStartTime)) {
             return true;
-        }
-        else if ((nStartTime > nEndTime) && (nCurrentTime <= nEndTime)) {
+        } else if ((nStartTime > nEndTime) && (nCurrentTime <= nEndTime)) {
             return true;
         }
         return false;
     }
-
 
     class ViewHolder {
         TextView txt__musicName;
@@ -488,7 +476,6 @@ public class PlayerActivity extends Activity {
         }
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -508,7 +495,7 @@ public class PlayerActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void loadSettingsAndShowDialog(){
+    private void loadSettingsAndShowDialog() {
 
         mPrgDlg.show();
 
@@ -517,10 +504,9 @@ public class PlayerActivity extends Activity {
             @Override
             public void done(DeviceSettings object, ParseException e) {
                 DeviceSettings settings = null;
-                if (object != null &&  e==null) {
+                if (object != null && e == null) {
                     mDeviceSettings = object;
-                }
-                else {
+                } else {
                     settings = new DeviceSettings();
                     settings.setDeviceId(ParseUser.getCurrentUser().getObjectId());
                     mDeviceSettings = settings;
@@ -535,97 +521,72 @@ public class PlayerActivity extends Activity {
 
     private void showDialog() {
 
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
         LayoutInflater inflater = LayoutInflater.from(this);
         View viewRoot = inflater.inflate(R.layout.dialog_setup_time, null);
 
-        final EditText etSongInterval = (EditText)viewRoot.findViewById(R.id.edit_songInterval);
-        final TextView tvStartTime  = (TextView) viewRoot.findViewById(R.id.txt_startTime);
-        final TextView tvEndTime  = (TextView) viewRoot.findViewById(R.id.txt_endTime);
-        final EditText tvPauseInterval  = (EditText) viewRoot.findViewById(R.id.edit_pauseInterval);
+        final EditText etSongInterval = (EditText) viewRoot.findViewById(R.id.edit_songInterval);
+        final TextView tvStartTime = (TextView) viewRoot.findViewById(R.id.txt_startTime);
+        final TextView tvEndTime = (TextView) viewRoot.findViewById(R.id.txt_endTime);
+        final EditText tvPauseInterval = (EditText) viewRoot.findViewById(R.id.edit_pauseInterval);
 
 
         final String deviceID = ParseUser.getCurrentUser().getObjectId();
 
-        tvStartTime.setOnClickListener(onDateViewClickListener);
-        tvEndTime.setOnClickListener(onDateViewClickListener);
+        tvStartTime.setOnClickListener(v -> getTime((TextView) v));
+        tvEndTime.setOnClickListener(v -> getTime((TextView) v));
         //do something with your view
 
         builder.setView(viewRoot);
-        builder.setPositiveButton("set", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+        builder.setPositiveButton("set", (dialog, which) -> {
 
+            final String str_startTime = tvStartTime.getText().toString();
+            final String str_endTime = tvEndTime.getText().toString();
+            final String str_songInterval = etSongInterval.getText().toString();
+            final String str_pauseInterval = tvPauseInterval.getText().toString();
 
-                final String str_startTime = tvStartTime.getText().toString();
-                final String str_endTime = tvEndTime.getText().toString();
-                final String str_songInterval = etSongInterval.getText().toString();
-                final String str_pauseInterval = tvPauseInterval.getText().toString();
+            if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty() || str_pauseInterval.isEmpty()) {
+                Toast.makeText(PlayerActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
+            } else {
 
-                if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty() || str_pauseInterval.isEmpty()) {
-                    Toast.makeText(PlayerActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
-                } else {
-
-
-                    if (mDeviceSettings == null) {
-                        mDeviceSettings = new DeviceSettings();
-                        mDeviceSettings.setDeviceId(ParseUser.getCurrentUser().getObjectId());
-                    }
-
-                    mDeviceSettings.setEndTime(str_endTime);
-                    mDeviceSettings.setSongInterval(str_songInterval);
-                    mDeviceSettings.setPauseInterval(str_pauseInterval);
-                    mDeviceSettings.setStartTime(str_startTime);
-                    mDeviceSettings.setDeviceId(deviceID);
-                    mPrgDlg.show();
-                    mDeviceSettings.saveInBackground(new SaveCallback() {
-                        @Override
-                        public void done(ParseException e) {
-                            if (e==null){
-                                DataSingleton.getInstance().mDeviceSettings = null;
-                            }
-                            else{
-                                DataSingleton.getInstance().mDeviceSettings = mDeviceSettings;;
-                            }
-                            mPrgDlg.dismiss();
-                        }
-                    });
-
-
-
-                    Time startTime = new Time();
-                    Time endTime = new Time();
-                    startTime.parseData(str_startTime);
-                    endTime.parseData(str_endTime);
-                    NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval);
-
-                    NotificationUtils notificationUtils = new NotificationUtils(PlayerActivity.this);
-                    notificationUtils.showNotificationMessage(message.getJsonObject());
-
-
+                if (mDeviceSettings == null) {
+                    mDeviceSettings = new DeviceSettings();
+                    mDeviceSettings.setDeviceId(ParseUser.getCurrentUser().getObjectId());
                 }
-            }
 
+                mDeviceSettings.setEndTime(str_endTime);
+                mDeviceSettings.setSongInterval(str_songInterval);
+                mDeviceSettings.setPauseInterval(str_pauseInterval);
+                mDeviceSettings.setStartTime(str_startTime);
+                mDeviceSettings.setDeviceId(deviceID);
+                mPrgDlg.show();
+                mDeviceSettings.saveInBackground(e -> {
+                    if (e == null) {
+                        dataSingleton.mDeviceSettings = null;
+                    } else {
+                        dataSingleton.mDeviceSettings = mDeviceSettings;
+                    }
+                    mPrgDlg.dismiss();
+                });
+
+                Time startTime = new Time();
+                Time endTime = new Time();
+                startTime.parseData(str_startTime);
+                endTime.parseData(str_endTime);
+                NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval);
+
+                NotificationUtils notificationUtils = new NotificationUtils(PlayerActivity.this);
+                notificationUtils.showNotificationMessage(message.getJsonObject());
+
+            }
         });
 
-        builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
+        builder.setNegativeButton("cancel", (dialog, which) -> {
         });
 
         builder.create().show();
     }
-
-    private View.OnClickListener onDateViewClickListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            getTime((TextView)v);
-        }
-    };
 
 
     private void getTime(final TextView txt_time) {
@@ -644,5 +605,68 @@ public class PlayerActivity extends Activity {
     }
 
 
+    public synchronized void buildGoogleApiClient() {
+        stopLocationUpdate();
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(LocationServices.API)
+                .addApi(Places.GEO_DATA_API)
+                .build();
+
+        if (!googleApiClient.isConnected()) googleApiClient.connect();
+    }
+
+    public void stopLocationUpdate() {
+        if (googleApiClient != null && googleApiClient.isConnected()) {
+            googleApiClient.disconnect();
+        }
+    }
+
+    public void updateLocation() {
+        if (checkLocationPermission(PERMISSIONS_REQUEST_LOCATION)) {
+            buildGoogleApiClient();
+            if (!googleApiClient.isConnected()) {
+                googleApiClient.connect();
+            }
+        }
+    }
+
+    public boolean checkGPState() {
+        LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        return (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        googleApiClient.connect();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Toast.makeText(this, getString(R.string.gps_disabled), Toast.LENGTH_SHORT).show();
+    }
+
+    public boolean checkLocationPermission(int requestCode) {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            this.requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, requestCode);
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSIONS_REQUEST_LOCATION && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            buildGoogleApiClient();
+        }
+    }
 
 }

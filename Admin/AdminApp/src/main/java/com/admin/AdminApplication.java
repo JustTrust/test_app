@@ -9,6 +9,7 @@ import android.widget.Toast;
 import com.admin.parsemodel.ConnectionStatus;
 import com.admin.parsemodel.DeviceSettings;
 import com.admin.util.Utils;
+import com.google.firebase.FirebaseApp;
 import com.parse.Parse;
 import com.parse.ParseInstallation;
 import com.parse.ParseObject;
@@ -43,7 +44,7 @@ public class AdminApplication extends Application {
         ParseInstallation currentInstall = ParseInstallation.getCurrentInstallation();
         currentInstall.saveInBackground();
         mCheckConnectionStatus = checkConnectionStatus();
-
+        FirebaseApp.initializeApp(this);
     }
 
     public static Context getContext() {
