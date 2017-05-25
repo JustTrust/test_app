@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Player</string>
+    <string name="intervalOfSongs">Interval for playing Songs : </string>
+    <string name="intervalOfPause">Interval for Pause : </string>
+    <string name="volume">Volume : </string>
+    <string name="startTime">Start Time : </string>
+    <string name="appStatus">App Status : </string>
+    <string name="remainTime">Remain : </string>
+    <string name="endTime">End Time : </string>
+    <string name="playing_Song_Name">Song Name : </string>
+    <string name="playing">Playing...</string>
+    <string name="pause">Pause</string>
+    <string name="device_name">Device Name : </string>
+    <string name="register_btn_txt">Regeister Device </string>
+    <string name="warning_login">Please input the device Name</string>
+    <string name="show_login_success">Register Success</string>
+    <string name="gps_enabled">GPS enabled</string>
+    <string name="gps_disabled">GPS disabled</string>
+    <string name="updateSent">Update message sent</string>
+    <string name="setup_time">Setup time</string>
+    <string name="empty_field">All fields must be completed</string>
+    <string name="no_connected_device">No connected devices</string>
+    <string name="intervalPause">PAUSE</string>
+    <string name="intervalSongs">PLAY</string>
+    <string name="start_time">Start Hour</string>
+    <string name="end_time">End Hour</string>
+
+</resources>

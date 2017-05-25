@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:gravity="center"
+    android:background="#aaaaaa"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="@dimen/padding"
+        >
+        <TextView
+            android:text="@string/intervalSongs"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:layout_height="wrap_content"/>
+        <EditText
+            android:id="@+id/edit_songInterval"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:textSize="20sp"
+            android:background="@drawable/bg_round_grey_color"
+            android:inputType="number"
+            android:gravity="center"
+            android:padding="8dp"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/padding"
+        android:orientation="horizontal">
+        <TextView
+            android:text="@string/start_time"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/txt_startTime"
+            android:layout_width="0dp"
+            android:textSize="20sp"
+            android:layout_weight="2"
+            android:gravity="center"
+            android:background="@color/color_grey"
+            android:layout_height="@dimen/control_height"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/padding"
+        android:orientation="horizontal">
+        <TextView
+            android:text="@string/end_time"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/txt_endTime"
+            android:textSize="20sp"
+            android:layout_width="0dp"
+            android:gravity="center"
+            android:layout_weight="2"
+            android:background="@color/color_grey"
+            android:layout_height="@dimen/control_height"/>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,2 @@
+include ':app', ':AdminApp'
+project(':AdminApp').projectDir = new File('Admin/AdminApp')
