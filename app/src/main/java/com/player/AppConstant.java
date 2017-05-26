@@ -7,10 +7,6 @@ package com.player;
 public class AppConstant{
 
 
-    public static final String FIELD_REMAIN = "remain";
-    static String PARSE_APP_ID = "A2qjYaI8UQUFttnHIiJddMCEIYlMCazTmvk933QN";
-    static String PARSE_CLIENT_KEY = "mlqhEvDmLnbvAdz7GvzdZWQBRLpH50cSxlkn50Zy";
-
     public final static String NOTIFY_IS_BACKGROUND="is_background";
     public static String FIELD_APP_NAME = "appName";
     public static String USER_PASSWORD = "PASSWORD";
@@ -36,21 +32,13 @@ public class AppConstant{
     public final static int START_FIRST_SONG = -1;
     public static String PLAYING = "playing...";
     public static String PAUSE = "Pause";
-    public final static int PLAYING_START = 1;
-    public final static int PLAYING_SAME = 2;
-    public final static int PLAYING_STOP = 3;
-    public final static int PLAYING_NEXT = 4;
-    public static int CONNECTION_CHECK_TIME = 9000;
-    public final static String FIELD_DEVICE_ID = "deviceID";
-    public final static String FIELD_DEVICE_Id = "deviceId";
-    public final static String FIELD_IS_PLAYING = "isPlaying";
-    public final static String FIELD_DEVICE_NAME = "deviceName";
-    public final static String FIELD_SONG = "song";
+
     public final static String FIELD_GPS = "gps";
-    public final static String FIELD_LATITUDE = "latitude";
-    public final static String FIELD_LONGITUDE = "longitude";
-    public final static String FIELD_TIME = "time";
-    public final static String FIELD_UPDATE_COMPLETED="isUpdateCompleted";
-    public final static String FIELD_VOLUME="volume";
+    public final static String FIELD_MSG = "msg";
+
+    public final static String NODE_DEVICES ="connected_devices";
+    public final static String NODE_SETTING="settings";
+    public final static String NODE_MESSAGES="messages";
+    public final static String NODE_ADMIN_MESSAGES="admin_messages";
 
 }

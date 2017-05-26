@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 
 import com.player.DataSingleton;
 import com.player.util.DataManager;
+import com.player.util.NotificationUtils;
 
 import javax.inject.Singleton;
 
@@ -36,5 +37,11 @@ public class AppModule {
     @Singleton
     DataManager provideDataManager(Context context){
         return new DataManager(context);
+    }
+
+    @Provides
+    @Singleton
+    NotificationUtils provideNotificationUtils(Context context){
+        return new NotificationUtils(context);
     }
 }

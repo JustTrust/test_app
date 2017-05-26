@@ -21,6 +21,8 @@ import com.player.ui.activity.PlayerActivity;
 import java.io.Serializable;
 import java.util.List;
 
+import javax.inject.Inject;
+
 /**
  * Created by Ravi on 01/06/15.
  */
@@ -29,22 +31,14 @@ public class NotificationUtils {
     private String TAG = NotificationUtils.class.getSimpleName();
 
     private Context mContext;
-    final ContentValues values = new ContentValues();
-    final ContentResolver resolver = PlayerApplication.getContext().getContentResolver();
-
-    public NotificationUtils() {
-    }
 
     public NotificationUtils(Context mContext) {
         this.mContext = mContext;
     }
 
-    public void showNotificationMessage(JSONObject data, Intent intent) {
+    public void showNotificationMessage(String msg) {
         int icon = R.mipmap.ic_launcher;
         NotificationMessage playerInfo = new NotificationMessage();
-        playerInfo.parseData(data);
-        intent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
-        intent.putExtra(AppConstant.FIELD_MESSAGE_DATA, (Serializable) playerInfo);
         try {
             if (isAppIsInBackground(mContext)) {
                 /*int mNotificationId = 100;
@@ -68,10 +62,10 @@ public class NotificationUtils {
             } else {
                 Intent newIntent = new Intent(mContext, PlayerActivity.class);
                 newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
-                newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, (Serializable)playerInfo);
+                newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, msg);
                 newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                PlayerApplication.getContext().startActivity(newIntent);
-                Toast.makeText(PlayerApplication.getContext(),"UpdateInfo", Toast.LENGTH_LONG).show();
+                mContext.startActivity(newIntent);
+                Toast.makeText(mContext,"UpdateInfo", Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -89,17 +83,17 @@ public class NotificationUtils {
                     playerInfo.parseData(data);
                     newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
                     newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, (Serializable) playerInfo);
-                    PlayerApplication.getContext().startActivity(newIntent);
-                    Toast.makeText(PlayerApplication.getContext(), "UpdateInfo", Toast.LENGTH_LONG).show();
+                    mContext.startActivity(newIntent);
+                    Toast.makeText(mContext, "UpdateInfo", Toast.LENGTH_LONG).show();
                 }else{
                     boolean isGpsEnabled = data.getBoolean(AppConstant.FIELD_GPS);
                     newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_GPS);
                     newIntent.putExtra(AppConstant.FIELD_GPS, isGpsEnabled);
-                    PlayerApplication.getContext().startActivity(newIntent);
-                    if(isGpsEnabled == true){
-                        PlayerApplication.showToast("Gps Enabled", Toast.LENGTH_LONG);
+                    mContext.startActivity(newIntent);
+                    if(isGpsEnabled){
+                        Toast.makeText(mContext, mContext.getString(R.string.gps_enabled), Toast.LENGTH_LONG).show();
                     }else{
-                        PlayerApplication.showToast("Gps Disabled", Toast.LENGTH_LONG);
+                        Toast.makeText(mContext, mContext.getString(R.string.gps_disabled), Toast.LENGTH_LONG).show();
                     }
                 }
             }
@@ -128,7 +122,6 @@ public class NotificationUtils {
                 isInBackground = false;
             }
         }
-
         return isInBackground;
     }
 }

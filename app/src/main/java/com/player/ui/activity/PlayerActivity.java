@@ -1,23 +1,20 @@
 package com.player.ui.activity;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -37,10 +34,13 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
-import com.parse.GetCallback;
-import com.parse.ParseException;
-import com.parse.ParseQuery;
-import com.parse.ParseUser;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.player.AppConstant;
 import com.player.DataSingleton;
 import com.player.PlayerApplication;
@@ -52,13 +52,15 @@ import com.player.foreground.events.ConnectivityChangedEvent;
 import com.player.foreground.events.StopPlayerEvent;
 import com.player.model.MusicInfo;
 import com.player.model.NotificationMessage;
+import com.player.model.PhoneSettings;
 import com.player.model.Time;
+import com.player.model.UserConnectionStatus;
 import com.player.movedetector.MoveDetector;
-import com.player.parseModel.ConnectionStatus;
-import com.player.parseModel.DeviceSettings;
 import com.player.ui.dialog.ProgressDialog;
+import com.player.util.DataManager;
 import com.player.util.NetworkUtil;
 import com.player.util.NotificationUtils;
+import com.player.util.PermissionUtil;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -67,8 +69,14 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import rx.Observable;
+import rx.subscriptions.CompositeSubscription;
 
 /**
  * @desc PlayerActivity for player interface
@@ -77,80 +85,73 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         GoogleApiClient.OnConnectionFailedListener {
 
     private static final String LOG_TAG = PlayerActivity.class.getName();
-    private static final int PERMISSIONS_REQUEST_LOCATION = 12;
-
-    public static PlayerActivity instance;
-    private TextView mTxt_songInterval;
-    private TextView mTxt_pauseInterval;
-    private TextView mTxt_startTime;
-    private TextView mTxt_endTime;
-    private ListView mlst_MusicList;
-    private MusicListAdapter mAdp_music;
-    private TextView mTxt_appStatus;
-    private TextView mTxt_remainTime;
-    private TextView mTxt_songName;
-    private PlaySongsN playSongs;
+    private static final int PERMISSIONS_REQUEST_LOCATION = 11;
+    private static final int PERMISSIONS_REQUEST_READ = 12;
     public static boolean mIs_GPSEnabled = false;
-    private MoveDetector mMove_dector;
-    public String mStr_Song = "";
     public static int m_currentPlayingSongIndex = 0;
-    public static ArrayList<MusicInfo> mlst_Musics = new ArrayList<MusicInfo>();
-    private ParseQuery<ConnectionStatus> m_connectionQuery = ConnectionStatus.getQuery();
+    public static ArrayList<MusicInfo> mlst_Musics = new ArrayList<>();
+    public String mStr_Song = "";
+
+    @BindView(R.id.txt_songInterval)
+    TextView mTxt_songInterval;
+    @BindView(R.id.txt_pauseInterval)
+    TextView mTxt_pauseInterval;
+    @BindView(R.id.txt_startTime)
+    TextView mTxt_startTime;
+    @BindView(R.id.txt_endTime)
+    TextView mTxt_endTime;
+    @BindView(R.id.txt_appStatus)
+    TextView mTxt_appStatus;
+    @BindView(R.id.txt_remainTime)
+    TextView mTxt_remainTime;
+    @BindView(R.id.txt_songName)
+    TextView mTxt_songName;
+    @BindView(R.id.lst_musics)
+    ListView mlst_MusicList;
+
+    @Inject
+    DataSingleton dataSingleton;
+    @Inject
+    DataManager dataManager;
+    @Inject
+    NotificationUtils notificationUtils;
+
+    AudioManager am;
+    String deviceId;
+    private MusicListAdapter mAdp_music;
+    private PlaySongsN playSongs;
+    private MoveDetector mMove_dector;
     private Cursor mCursor;
     private boolean isPlaying;
     private int remainTime;
     private ProgressDialog mPrgDlg;
-    private DeviceSettings mDeviceSettings;
+    private PhoneSettings mDeviceSettings;
     private GoogleApiClient googleApiClient;
-
-    @Inject
-    DataSingleton dataSingleton;
-
-    private Handler statusHandler = new Handler() {
-        public void handleMessage(Message m) {
-            switch (m.what) {
-                case HANDLER_PLAYER: {
-                    if (playSongs != null) {
-                        playSongs.checkPlayStatus();
-                    }
-
-                    statusHandler.sendEmptyMessageDelayed(HANDLER_PLAYER, 1000);
-                }
-                break;
-
-                case HANDLER_STATUS: {
-                    setSendingConnSetting();
-                    statusHandler.sendEmptyMessageDelayed(HANDLER_STATUS, 1000);
-                }
-                break;
-            }
-        }
-    };
-
-    private static final int HANDLER_PLAYER = 0;
-    private static final int HANDLER_STATUS = 1;
-
-    AudioManager am;
+    private CompositeSubscription compositeSubscription = new CompositeSubscription();
+    private boolean progress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         PlayerApplication.getAppComponent().inject(this);
         setContentView(R.layout.activity_main);
-        instance = this;
+        ButterKnife.bind(this);
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         getMusicsFromStorage();
         initUI();
         initMoveDector();
-        String userName = getIntent().getStringExtra(LoginActivity.USER_NAME);
-        if (userName == null) throw new IllegalStateException("Start PlayerActivity without user");
-        getActionBar().setTitle(userName);
-        TimerWakeLock.acquireCpuWakeLock(PlayerApplication.getContext());
+
+        FirebaseUser currentUser = dataManager.getCurrentUser();
+        if (currentUser == null) {
+            throw new IllegalStateException("User not authorized");
+        } else {
+            getActionBar().setTitle(currentUser.getDisplayName());
+        }
+        TimerWakeLock.acquireCpuWakeLock(this);
 
         am = (AudioManager) getSystemService(AUDIO_SERVICE);
-        statusHandler.sendEmptyMessage(HANDLER_PLAYER);
-        statusHandler.sendEmptyMessage(HANDLER_STATUS);
+        startTimer();
     }
-
 
     @Override
     protected void onStart() {
@@ -158,6 +159,16 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         setSendingConnSetting();
         EventBus.getDefault().register(this);
         updateLocation();
+    }
+
+    private void startTimer() {
+        compositeSubscription.add(Observable.interval(1, TimeUnit.SECONDS)
+                .subscribe(aLong -> {
+                    if (playSongs != null) {
+                        playSongs.checkPlayStatus();
+                    }
+                    setSendingConnSetting();
+                }));
     }
 
     @Override
@@ -180,62 +191,64 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             playSongs.stopPlaying();*/
     }
 
-    // init location moveDector
     private void initMoveDector() {
-        mMove_dector = new MoveDetector(googleApiClient); //ParseUser.getCurrentUser().getObjectId()
+        mMove_dector = new MoveDetector(googleApiClient);
     }
-
-
-    private boolean progress;
 
     private void setSendingConnSetting() {
         Log.d(LOG_TAG, "setSendingConnSetting: isPlaying " + isPlaying);
 
-        if (!NetworkUtil.isOnline(this)) {
-            return;
-        }
-
         if (progress) return;
-
         progress = true;
-        m_connectionQuery.getFirstInBackground(new GetCallback<ConnectionStatus>() {
+
+        DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_DEVICES).child(deviceId);
+        connected_dev.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void done(final ConnectionStatus conInfo, ParseException e) {
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                UserConnectionStatus status = dataSnapshot.getValue(UserConnectionStatus.class);
+                updateConnectionStatus(status);
                 progress = false;
-                if (conInfo != null) {
-                    conInfo.setSong(mStr_Song);
-                    conInfo.setIsPlaying(isPlaying);
-                    conInfo.setRemain(remainTime);
-                    int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
-                    //System.out.println("volume_level = " + volume_level);
-                    conInfo.setVolume(String.valueOf(volume_level));
-                    if (conInfo.getGPSEnabled() != mIs_GPSEnabled) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
+            }
 
-                                if (conInfo.getGPSEnabled() == true) {
-                                    PlayerApplication.showToast("GPS Enabled", Toast.LENGTH_SHORT);
-                                } else {
-                                    PlayerApplication.showToast("GPS Disabled", Toast.LENGTH_SHORT);
-                                }
-                            }
-                        });
-                        mIs_GPSEnabled = conInfo.getGPSEnabled();
-                        mMove_dector.setGPSEnabled(mIs_GPSEnabled);
-                    }
-
-                    dataSingleton.mConnectionStatus = conInfo;
-                    conInfo.saveInBackground();
-                }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                progress = false;
             }
         });
+
+    }
+
+    private void updateConnectionStatus(UserConnectionStatus status) {
+        if (status != null) {
+            status.longitude = mStr_Song;
+            status.isPlaying = isPlaying;
+            status.remain = remainTime;
+            int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            status.volume = String.valueOf(volume_level);
+            if (status.gpsEnabled != mIs_GPSEnabled) {
+                if (status.gpsEnabled) {
+                    Toast.makeText(PlayerActivity.this,
+                            PlayerActivity.this.getString(R.string.gps_enabled),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(PlayerActivity.this,
+                            PlayerActivity.this.getString(R.string.gps_disabled),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+            mIs_GPSEnabled = status.gpsEnabled;
+            mMove_dector.setGPSEnabled(mIs_GPSEnabled);
+        }
+        dataManager.saveStatus(status);
     }
 
     // get list of media file from sdcard
     private void getMusicsFromStorage() {
 
-        Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        if (!PermissionUtil.checkReadPermission(PERMISSIONS_REQUEST_READ, this)) return;
+
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         mCursor = getContentResolver().query(
                 uri,
@@ -260,16 +273,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void initUI() {
-        mTxt_songInterval = (TextView) this.findViewById(R.id.txt_songInterval);
-        mTxt_pauseInterval = (TextView) this.findViewById(R.id.txt_pauseInterval);
-        mTxt_startTime = (TextView) this.findViewById(R.id.txt_startTime);
-        mTxt_endTime = (TextView) this.findViewById(R.id.txt_endTime);
-        mTxt_appStatus = (TextView) this.findViewById(R.id.txt_appStatus);
-        mTxt_remainTime = (TextView) this.findViewById(R.id.txt_remainTime);
-        mTxt_songName = (TextView) this.findViewById(R.id.txt_songName);
-
         mlst_MusicList = (ListView) this.findViewById(R.id.lst_musics);
-        mAdp_music = new MusicListAdapter();
+        mAdp_music = new MusicListAdapter(mlst_Musics);
         mlst_MusicList.setAdapter(mAdp_music);
         mPrgDlg = new ProgressDialog(this);
     }
@@ -318,15 +323,17 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         super.onDestroy();
         playerDestory();
         TimerWakeLock.releaseCpuLock();
-
-        statusHandler.removeMessages(HANDLER_PLAYER);
-        statusHandler.removeMessages(HANDLER_STATUS);
+        compositeSubscription.clear();
     }
 
     private void playerDestory() {
         if (playSongs != null) {
             playSongs.onDestroy();
             playSongs = null;
+            mStr_Song = "";
+            setSongName("--");
+            setAppStatus("--");
+            setRemainTime(-1);
         }
     }
 
@@ -334,6 +341,10 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         if (playSongs == null) {
             playSongs = new PlaySongsN();
             playSongs.onStartCommand(playerInfo);
+            if (playSongs.play()) {
+                setSongName(playSongs.getFileName(m_currentPlayingSongIndex));
+                mStr_Song = (m_currentPlayingSongIndex + 1) + ". " + playSongs.getFileName(m_currentPlayingSongIndex);
+            }
         } else {
             playSongs.resume();
         }
@@ -362,7 +373,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
                 //need to set the alarm for next day as well.
                 messageData.clearRealStartTime();
-                StartTime.setAlarm(PlayerApplication.getContext(), messageData);
+                StartTime.setAlarm(this, messageData);
 
             }
             break;
@@ -379,9 +390,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                         //need to offset the seconds for this
 
                     }
-
-                    StartTime.setAlarm(PlayerApplication.getContext(), messageData);
-
+                    StartTime.setAlarm(this, messageData);
                 }
                 break;
         }
@@ -416,66 +425,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         return false;
     }
 
-    class ViewHolder {
-        TextView txt__musicName;
-        CheckBox chk_music;
-    }
-
-    private class MusicListAdapter extends BaseAdapter {
-
-        @Override
-        public int getCount() {
-            // TODO Auto-generated method stub
-            return mlst_Musics.size();
-        }
-
-        @Override
-        public MusicInfo getItem(int pos) {
-            // TODO Auto-generated method stub
-
-            return mlst_Musics.get(pos);
-        }
-
-        @Override
-        public long getItemId(int index) {
-            // TODO Auto-generated method stub
-            return mlst_Musics.size();
-        }
-
-        @Override
-        public View getView(final int pos, View view, ViewGroup arg2) {
-            final ViewHolder holder;
-            if (view == null) {
-                holder = new ViewHolder();
-                view = View.inflate(PlayerActivity.this, R.layout.cell_music_list, null);
-                holder.txt__musicName = (TextView) view.findViewById(R.id.txt_musicName);
-                holder.chk_music = (CheckBox) view.findViewById(R.id.chk_music);
-                view.setTag(holder);
-            } else {
-                holder = (ViewHolder) view.getTag();
-            }
-            int index = pos + 1;
-            holder.txt__musicName.setText(index + ". " + mlst_Musics.get(pos).mStr_musicName);
-            if (mlst_Musics.get(pos).mIs_enabled == true) {
-                holder.chk_music.setChecked(true);
-            } else {
-                holder.chk_music.setChecked(false);
-            }
-
-            holder.chk_music.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if (isChecked == true) {
-                        mlst_Musics.get(pos).mIs_enabled = true;
-                    } else {
-                        mlst_Musics.get(pos).mIs_enabled = false;
-                    }
-                }
-            });
-            return view;
-        }
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -498,25 +447,30 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private void loadSettingsAndShowDialog() {
 
         mPrgDlg.show();
-
-        ParseQuery<DeviceSettings> deviceSettingsParseQuery = DeviceSettings.getQuery().whereEqualTo(AppConstant.FIELD_DEVICE_Id, ParseUser.getCurrentUser().getObjectId());
-        deviceSettingsParseQuery.getFirstInBackground(new GetCallback<DeviceSettings>() {
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
+                .child("connected_devices").child(deviceId);
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void done(DeviceSettings object, ParseException e) {
-                DeviceSettings settings = null;
-                if (object != null && e == null) {
-                    mDeviceSettings = object;
-                } else {
-                    settings = new DeviceSettings();
-                    settings.setDeviceId(ParseUser.getCurrentUser().getObjectId());
-                    mDeviceSettings = settings;
-                }
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                PhoneSettings value = dataSnapshot.getValue(PhoneSettings.class);
+                mDeviceSettings = value;
+                afterSettingRequest();
+            }
 
-                mPrgDlg.dismiss();
-                showDialog();
+            @Override
+            public void onCancelled(DatabaseError error) {
+                PhoneSettings settings = new PhoneSettings();
+                settings.deviceId = deviceId;
+                mDeviceSettings = settings;
+                afterSettingRequest();
             }
         });
 
+    }
+
+    private void afterSettingRequest() {
+        mPrgDlg.dismiss();
+        showDialog();
     }
 
     private void showDialog() {
@@ -531,15 +485,11 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         final TextView tvEndTime = (TextView) viewRoot.findViewById(R.id.txt_endTime);
         final EditText tvPauseInterval = (EditText) viewRoot.findViewById(R.id.edit_pauseInterval);
 
-
-        final String deviceID = ParseUser.getCurrentUser().getObjectId();
-
         tvStartTime.setOnClickListener(v -> getTime((TextView) v));
         tvEndTime.setOnClickListener(v -> getTime((TextView) v));
-        //do something with your view
 
         builder.setView(viewRoot);
-        builder.setPositiveButton("set", (dialog, which) -> {
+        builder.setPositiveButton("set", (DialogInterface dialog, int which) -> {
 
             final String str_startTime = tvStartTime.getText().toString();
             final String str_endTime = tvEndTime.getText().toString();
@@ -551,34 +501,28 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             } else {
 
                 if (mDeviceSettings == null) {
-                    mDeviceSettings = new DeviceSettings();
-                    mDeviceSettings.setDeviceId(ParseUser.getCurrentUser().getObjectId());
+                    mDeviceSettings = new PhoneSettings();
+                    mDeviceSettings.deviceId = deviceId;
                 }
 
-                mDeviceSettings.setEndTime(str_endTime);
-                mDeviceSettings.setSongInterval(str_songInterval);
-                mDeviceSettings.setPauseInterval(str_pauseInterval);
-                mDeviceSettings.setStartTime(str_startTime);
-                mDeviceSettings.setDeviceId(deviceID);
+                mDeviceSettings.endTime = str_endTime;
+                mDeviceSettings.songInterval = str_songInterval;
+                mDeviceSettings.pauseInterval = str_pauseInterval;
+                mDeviceSettings.startTime = str_startTime;
+                mDeviceSettings.deviceId = deviceId;
                 mPrgDlg.show();
-                mDeviceSettings.saveInBackground(e -> {
-                    if (e == null) {
-                        dataSingleton.mDeviceSettings = null;
-                    } else {
-                        dataSingleton.mDeviceSettings = mDeviceSettings;
-                    }
-                    mPrgDlg.dismiss();
-                });
+
+                dataManager.saveSettings(mDeviceSettings);
 
                 Time startTime = new Time();
                 Time endTime = new Time();
                 startTime.parseData(str_startTime);
                 endTime.parseData(str_endTime);
+
+                mPrgDlg.dismiss();
+
                 NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval);
-
-                NotificationUtils notificationUtils = new NotificationUtils(PlayerActivity.this);
                 notificationUtils.showNotificationMessage(message.getJsonObject());
-
             }
         });
 
@@ -587,7 +531,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
         builder.create().show();
     }
-
 
     private void getTime(final TextView txt_time) {
         Calendar mcurrentTime = Calendar.getInstance();
@@ -603,7 +546,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         mTimePicker.setTitle("Select Time");
         mTimePicker.show();
     }
-
 
     public synchronized void buildGoogleApiClient() {
         stopLocationUpdate();
@@ -622,7 +564,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     public void updateLocation() {
-        if (checkLocationPermission(PERMISSIONS_REQUEST_LOCATION)) {
+        if (PermissionUtil.checkLocationPermission(PERMISSIONS_REQUEST_LOCATION, this)) {
             buildGoogleApiClient();
             if (!googleApiClient.isConnected()) {
                 googleApiClient.connect();
@@ -650,23 +592,17 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         Toast.makeText(this, getString(R.string.gps_disabled), Toast.LENGTH_SHORT).show();
     }
 
-    public boolean checkLocationPermission(int requestCode) {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            this.requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, requestCode);
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSIONS_REQUEST_LOCATION && grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            buildGoogleApiClient();
+        if (PermissionUtil.verifyPermissions(grantResults)) {
+            if (requestCode == PERMISSIONS_REQUEST_LOCATION) {
+                buildGoogleApiClient();
+            } else if (requestCode == PERMISSIONS_REQUEST_READ) {
+                getMusicsFromStorage();
+            }
         }
     }
+
 
 }

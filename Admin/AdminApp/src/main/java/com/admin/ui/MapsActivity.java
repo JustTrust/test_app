@@ -8,7 +8,6 @@ import android.support.v4.util.ArrayMap;
 import android.text.Html;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
@@ -63,21 +62,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-
         actSearch = (AutoCompleteTextView) findViewById(R.id.actSearch);
 
         mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
 
-
-        actSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                for (ConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
-                    if (connectionStatus.getDeviceName().equalsIgnoreCase(actSearch.getText().toString())) {
-                        hideKeyboard(MapsActivity.this);
-                        LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.getLatitude()), Double.valueOf(connectionStatus.getLongitude()));
-                        navigate(actSearch.getText().toString(), mLatLong);
-                    }
+        actSearch.setOnItemClickListener((parent, view, position, id) -> {
+            for (ConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
+                if (connectionStatus.getDeviceName().equalsIgnoreCase(actSearch.getText().toString())) {
+                    hideKeyboard(MapsActivity.this);
+                    LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.getLatitude()), Double.valueOf(connectionStatus.getLongitude()));
+                    navigate(actSearch.getText().toString(), mLatLong);
                 }
             }
         });
@@ -85,7 +79,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         adapter = new ArrayAdapter<String>(MapsActivity.this, android.R.layout.simple_list_item_1, deviceName);
         actSearch.setAdapter(adapter);
         timer = new Timer();
-
 
     }
 
@@ -138,18 +131,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mMap.clear();
-                        System.out.println("Thread Run");
-                        if ((MainListActivity.mIsDeviceScheduleSetUpMap != null) && MainListActivity.mIsDeviceScheduleSetUpMap.size() > 0) {
-                            mIsDeviceScheduleSetUpMap.clear();
-                            mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
-                        }
-                        addMarkersToMap();
-
+                runOnUiThread(() -> {
+                    mMap.clear();
+                    System.out.println("Thread Run");
+                    if ((MainListActivity.mIsDeviceScheduleSetUpMap != null) && MainListActivity.mIsDeviceScheduleSetUpMap.size() > 0) {
+                        mIsDeviceScheduleSetUpMap.clear();
+                        mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
                     }
+                    addMarkersToMap();
+
                 });
             }
         }, 10000, 10000);
@@ -259,7 +249,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             render(marker, mContents);
             return mContents;
         }
-
     }
 
     /**
@@ -281,7 +270,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             String[] title = marker.getTitle().split("_:_");
             txtUserName.setText(title[0]);
             txtPlayStatus.setText(title[1]);
-
 
             if (title[1].equalsIgnoreCase("playing")) {
                 txtPlayStatus.setText(Html.fromHtml(getString(R.string.playing)));

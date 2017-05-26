@@ -10,7 +10,7 @@
     <string name="playing_Song_Name">Song Name : </string>
     <string name="playing">Playing...</string>
     <string name="pause">Pause</string>
-    <string name="device_name">Device Name : </string>
+    <string name="device_name">Device name</string>
     <string name="register_btn_txt">Regeister Device </string>
     <string name="warning_login">Please input the device Name</string>
     <string name="show_login_success">Register Success</string>
@@ -24,5 +24,6 @@
     <string name="intervalSongs">PLAY</string>
     <string name="start_time">Start Hour</string>
     <string name="end_time">End Hour</string>
+    <string name="authorization_failed">Authentication failed.</string>
 
 </resources>

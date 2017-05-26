@@ -22,6 +22,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -29,9 +30,10 @@ import rx.schedulers.Schedulers;
  */
 public class AdminApplication extends Application {
 
-    private boolean connectionFlag=true;
+    private boolean connectionFlag = true;
     public static Context mContext;
     private Subscription mCheckConnectionStatus;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -59,30 +61,18 @@ public class AdminApplication extends Application {
         return Observable.interval(1, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<Long>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onNext(Long t) {
-                        if (Utils.isOnline(mContext)) {
-                            if(!connectionFlag) {
-                                Toast.makeText(mContext, "Internet connection is restored", Toast.LENGTH_LONG).show();
-                                connectionFlag=true;
-                            }
-                        }else{
-                            if(connectionFlag) {
-                                Toast.makeText(mContext, "You are not connected to the internet", Toast.LENGTH_LONG).show();
-                                connectionFlag=false;
-                            }
-
+                .subscribe(aLong -> {
+                    if (Utils.isOnline(mContext)) {
+                        if (!connectionFlag) {
+                            Toast.makeText(mContext, "Internet connection is restored", Toast.LENGTH_LONG).show();
+                            connectionFlag = true;
                         }
+                    } else {
+                        if (connectionFlag) {
+                            Toast.makeText(mContext, "You are not connected to the internet", Toast.LENGTH_LONG).show();
+                            connectionFlag = false;
+                        }
+
                     }
                 });
     }
