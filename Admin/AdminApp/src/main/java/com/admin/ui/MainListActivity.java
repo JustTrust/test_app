@@ -35,6 +35,7 @@ import com.admin.model.NotificationMessage;
 import com.admin.model.Time;
 import com.admin.parsemodel.ConnectionStatus;
 import com.admin.parsemodel.DeviceSettings;
+import com.admin.util.DataManager;
 import com.admin.util.Utils;
 import com.parse.FindCallback;
 import com.parse.GetCallback;
@@ -55,6 +56,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+
 
 /**
  * @desc MainListActivity for list of register player device
@@ -67,7 +70,7 @@ public class MainListActivity extends FragmentActivity implements View.OnClickLi
     private ListView mLst_playerApps;
     private PlayerAppListAdapter mAdpt_playerApps;
     private ArrayList<ConnectionStatus> mArlst_players;
-    private static ArrayList<String> mAry_listMessages = new ArrayList<String>();
+    private static ArrayList<String> mAry_listMessages = new ArrayList<>();
     private boolean m_isCompleted = true;
 
     public static Map<ConnectionStatus, DeviceSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
@@ -76,10 +79,14 @@ public class MainListActivity extends FragmentActivity implements View.OnClickLi
     TextView txtRight;
     ProgressDialog pDialog;
 
+    @Inject
+    DataManager dataManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_list_activity);
+        AdminApplication.getAppComponent().inject(this);
         try {
             ViewConfiguration config = ViewConfiguration.get(this);
             Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
@@ -135,7 +142,7 @@ public class MainListActivity extends FragmentActivity implements View.OnClickLi
 
                     }).start();
                 } else {
-                    AdminApplication.showMessage(e.getMessage(), Toast.LENGTH_LONG);
+                    Toast.makeText(MainListActivity.this, e.getMessage(), Toast.LENGTH_LONG);
                 }
             }
         });

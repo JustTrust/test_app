@@ -54,4 +54,9 @@ public class AppConstant{
     public static final String EXTRA_DEVICE_NAME = "EXTRA_DEVICE_NAME";
     public final static String FIELD_VOLUME="volume";
 
+    public final static String NODE_DEVICES ="connected_devices";
+    public final static String NODE_SETTING="settings";
+    public final static String NODE_MESSAGES="messages";
+    public final static String NODE_ADMIN_MESSAGES="admin_messages";
+
 }

@@ -8,10 +8,8 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Pair;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
-import com.admin.AdminApplication;
 import com.admin.AppConstant;
 import com.admin.R;
 import com.admin.ui.LocationNotificationsAdapter;
@@ -21,7 +19,6 @@ public class NotificationDialog extends Activity {
     private ListView mList_Notifications;
     private Button mBtn_OK;
     private LocationNotificationsAdapter mAy_adapter;
-    private Context mContext = AdminApplication.getContext();
     private static MediaPlayer mediaPlayer = null;
 
     @Override
@@ -30,13 +27,13 @@ public class NotificationDialog extends Activity {
         setContentView(R.layout.dialog_layout);
         initUI();
         setTitle(AppConstant.WARNING);
-        AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         audioManager.setMode(AudioManager.MODE_NORMAL);
         if (mediaPlayer == null) {
             mediaPlayer = new MediaPlayer();
             try {
                 mediaPlayer.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
-                mediaPlayer.setDataSource(mContext, Uri.parse("android.resource://" + mContext.getPackageName() + "/" + R.raw.hangout));
+                mediaPlayer.setDataSource(this, Uri.parse("android.resource://" + this.getPackageName() + "/" + R.raw.hangout));
                 mediaPlayer.prepare();
                 mediaPlayer.setLooping(true);
             } catch (Exception e) {
@@ -67,12 +64,9 @@ public class NotificationDialog extends Activity {
         mBtn_OK = (Button) this.findViewById(R.id.btn_Ok);
         mAy_adapter = new LocationNotificationsAdapter(this);
         mList_Notifications.setAdapter(mAy_adapter);
-        mBtn_OK.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mAy_adapter.clear();
-                finish();
-            }
+        mBtn_OK.setOnClickListener(v -> {
+            mAy_adapter.clear();
+            finish();
         });
     }
 

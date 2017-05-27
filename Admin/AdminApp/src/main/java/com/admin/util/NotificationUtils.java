@@ -21,7 +21,6 @@ public class NotificationUtils {
 
     private Context mContext;
     final ContentValues values = new ContentValues();
-    final ContentResolver resolver = AdminApplication.getContext().getContentResolver();
 
     public NotificationUtils() {
     }
