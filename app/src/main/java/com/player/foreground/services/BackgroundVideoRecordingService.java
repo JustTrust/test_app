@@ -64,9 +64,7 @@ public class BackgroundVideoRecordingService extends Service{
 
     @Override
     public void onDestroy() {
-
         stopRecorder();
-
     }
 
     private void stopRecorder(){

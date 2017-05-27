@@ -87,13 +87,14 @@ public class MoveDetector implements SensorEventListener {
                             Location currentLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
                             if (currentLocation != null) {
                                 Log.i("ACCERATION2", "send data");
-                                dataManager.sendNotificationToAdmin(currentLocation.getLatitude(), currentLocation.getLongitude());
                                 dataManager.saveCoordinateInStatus(String.valueOf(currentLocation.getLatitude()),
                                         String.valueOf(currentLocation.getLongitude()));
+                                dataManager.sendNotificationToAdmin(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                                 //Start recording
                                 context.startService(new Intent(context, BackgroundVideoRecordingService.class));
                             }
+                            mIsSending = false;
                         }
                     }
                 }

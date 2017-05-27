@@ -61,8 +61,9 @@ public class DataManager {
         int min = cal.get(Calendar.MINUTE);
 
         Message msg = new Message(latitude, longitude, hours + ":" + min);
-
-
+        DatabaseReference admMsg = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId);
+        admMsg.setValue(msg);
     }
 
     public void storeUserConnection(UserConnectionStatus userConnectionStatus) {
@@ -73,5 +74,9 @@ public class DataManager {
 
     public FirebaseUser getCurrentUser(){
         return FirebaseAuth.getInstance().getCurrentUser();
+    }
+
+    public String getDeviceId() {
+        return deviceId;
     }
 }

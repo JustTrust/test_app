@@ -78,11 +78,11 @@ public class NotificationUtils {
         try {
             if (!isAppIsInBackground(mContext)) {
                 boolean isGPSSetting = data.getBoolean(AppConstant.NOTIFY_IS_BACKGROUND);
-                if(isGPSSetting == false) {
+                if(!isGPSSetting) {
                     NotificationMessage playerInfo = new NotificationMessage();
                     playerInfo.parseData(data);
                     newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
-                    newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, (Serializable) playerInfo);
+                    newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, playerInfo);
                     mContext.startActivity(newIntent);
                     Toast.makeText(mContext, "UpdateInfo", Toast.LENGTH_LONG).show();
                 }else{

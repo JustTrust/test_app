@@ -12,7 +12,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -20,10 +19,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -34,7 +29,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -58,7 +52,6 @@ import com.player.model.UserConnectionStatus;
 import com.player.movedetector.MoveDetector;
 import com.player.ui.dialog.ProgressDialog;
 import com.player.util.DataManager;
-import com.player.util.NetworkUtil;
 import com.player.util.NotificationUtils;
 import com.player.util.PermissionUtil;
 
@@ -117,7 +110,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     NotificationUtils notificationUtils;
 
     AudioManager am;
-    String deviceId;
     private MusicListAdapter mAdp_music;
     private PlaySongsN playSongs;
     private MoveDetector mMove_dector;
@@ -136,17 +128,16 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         PlayerApplication.getAppComponent().inject(this);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        getMusicsFromStorage();
-        initUI();
-        initMoveDector();
-
         FirebaseUser currentUser = dataManager.getCurrentUser();
         if (currentUser == null) {
             throw new IllegalStateException("User not authorized");
         } else {
             getActionBar().setTitle(currentUser.getDisplayName());
         }
+        getMusicsFromStorage();
+        initUI();
+        initMoveDector();
+
         TimerWakeLock.acquireCpuWakeLock(this);
 
         am = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -202,7 +193,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         progress = true;
 
         DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceId);
+                .child(AppConstant.NODE_DEVICES).child(dataManager.getDeviceId());
         connected_dev.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -277,6 +268,21 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         mAdp_music = new MusicListAdapter(mlst_Musics);
         mlst_MusicList.setAdapter(mAdp_music);
         mPrgDlg = new ProgressDialog(this);
+        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_SETTING)
+                .child(dataManager.getDeviceId()).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                mDeviceSettings = dataSnapshot.getValue(PhoneSettings.class);
+                NotificationMessage message = new NotificationMessage(false, new Time(mDeviceSettings.startTime),
+                        new Time(mDeviceSettings.endTime), mDeviceSettings.songInterval, mDeviceSettings.pauseInterval);
+                notificationUtils.showNotificationMessage(message.getJsonObject());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     @Override
@@ -440,7 +446,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             loadSettingsAndShowDialog();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -448,20 +453,18 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
         mPrgDlg.show();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
-                .child("connected_devices").child(deviceId);
+                .child(AppConstant.NODE_SETTING).child(dataManager.getDeviceId());
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                PhoneSettings value = dataSnapshot.getValue(PhoneSettings.class);
-                mDeviceSettings = value;
+                mDeviceSettings = dataSnapshot.getValue(PhoneSettings.class);
                 afterSettingRequest();
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
-                PhoneSettings settings = new PhoneSettings();
-                settings.deviceId = deviceId;
-                mDeviceSettings = settings;
+                mDeviceSettings = new PhoneSettings();
+                mDeviceSettings.deviceId = dataManager.getDeviceId();
                 afterSettingRequest();
             }
         });
@@ -484,52 +487,51 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         final TextView tvStartTime = (TextView) viewRoot.findViewById(R.id.txt_startTime);
         final TextView tvEndTime = (TextView) viewRoot.findViewById(R.id.txt_endTime);
         final EditText tvPauseInterval = (EditText) viewRoot.findViewById(R.id.edit_pauseInterval);
-
+        if (mDeviceSettings != null) {
+            etSongInterval.setText(mDeviceSettings.songInterval);
+            tvPauseInterval.setText(mDeviceSettings.pauseInterval);
+            tvEndTime.setText(mDeviceSettings.endTime);
+            tvStartTime.setText(mDeviceSettings.startTime);
+        }
         tvStartTime.setOnClickListener(v -> getTime((TextView) v));
         tvEndTime.setOnClickListener(v -> getTime((TextView) v));
 
-        builder.setView(viewRoot);
-        builder.setPositiveButton("set", (DialogInterface dialog, int which) -> {
+        builder.setView(viewRoot)
+                .setPositiveButton("set", (DialogInterface dialog, int which) -> {
 
-            final String str_startTime = tvStartTime.getText().toString();
-            final String str_endTime = tvEndTime.getText().toString();
-            final String str_songInterval = etSongInterval.getText().toString();
-            final String str_pauseInterval = tvPauseInterval.getText().toString();
+                    final String str_startTime = tvStartTime.getText().toString();
+                    final String str_endTime = tvEndTime.getText().toString();
+                    final String str_songInterval = etSongInterval.getText().toString();
+                    final String str_pauseInterval = tvPauseInterval.getText().toString();
 
-            if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty() || str_pauseInterval.isEmpty()) {
-                Toast.makeText(PlayerActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
-            } else {
+                    if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty() || str_pauseInterval.isEmpty()) {
+                        Toast.makeText(PlayerActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
+                    } else {
 
-                if (mDeviceSettings == null) {
-                    mDeviceSettings = new PhoneSettings();
-                    mDeviceSettings.deviceId = deviceId;
-                }
+                        if (mDeviceSettings == null) {
+                            mDeviceSettings = new PhoneSettings();
+                            mDeviceSettings.deviceId = dataManager.getDeviceId();
+                        }
 
-                mDeviceSettings.endTime = str_endTime;
-                mDeviceSettings.songInterval = str_songInterval;
-                mDeviceSettings.pauseInterval = str_pauseInterval;
-                mDeviceSettings.startTime = str_startTime;
-                mDeviceSettings.deviceId = deviceId;
-                mPrgDlg.show();
+                        mDeviceSettings.endTime = str_endTime;
+                        mDeviceSettings.songInterval = str_songInterval;
+                        mDeviceSettings.pauseInterval = str_pauseInterval;
+                        mDeviceSettings.startTime = str_startTime;
+                        mDeviceSettings.deviceId = dataManager.getDeviceId();
+                        mPrgDlg.show();
 
-                dataManager.saveSettings(mDeviceSettings);
+                        dataManager.saveSettings(mDeviceSettings);
 
-                Time startTime = new Time();
-                Time endTime = new Time();
-                startTime.parseData(str_startTime);
-                endTime.parseData(str_endTime);
-
-                mPrgDlg.dismiss();
-
-                NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval);
-                notificationUtils.showNotificationMessage(message.getJsonObject());
-            }
-        });
-
-        builder.setNegativeButton("cancel", (dialog, which) -> {
-        });
-
-        builder.create().show();
+                        mPrgDlg.dismiss();
+                        NotificationMessage message = new NotificationMessage(false,
+                                new Time(str_startTime), new Time(str_endTime), str_songInterval, str_pauseInterval);
+                        notificationUtils.showNotificationMessage(message.getJsonObject());
+                    }
+                })
+                .setNegativeButton("cancel", (dialog, which) -> {
+                })
+                .create()
+                .show();
     }
 
     private void getTime(final TextView txt_time) {

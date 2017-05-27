@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.player.R;
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 
 public class MusicListAdapter extends BaseAdapter {
 
-    ArrayList<MusicInfo> mlst_Musics;
+    private ArrayList<MusicInfo> mlst_Musics;
 
     public MusicListAdapter(ArrayList<MusicInfo> mlst_Musics) {
         this.mlst_Musics = mlst_Musics;
@@ -52,15 +51,10 @@ public class MusicListAdapter extends BaseAdapter {
         } else {
             holder = (ViewHolder) view.getTag();
         }
-        holder.txt__musicName.setText((pos + 1) + ". " + mlst_Musics.get(pos).mStr_musicName);
-        if (mlst_Musics.get(pos).mIs_enabled) {
-            holder.chk_music.setChecked(true);
-        } else {
-            holder.chk_music.setChecked(false);
-        }
-
         holder.chk_music.setOnCheckedChangeListener((buttonView, isChecked) ->
                 mlst_Musics.get(pos).mIs_enabled = isChecked);
+        holder.txt__musicName.setText((pos + 1) + ". " + mlst_Musics.get(pos).mStr_musicName);
+        holder.chk_music.setChecked(mlst_Musics.get(pos).mIs_enabled);
         return view;
     }
 
