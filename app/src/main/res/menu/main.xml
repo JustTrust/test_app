@@ -4,7 +4,10 @@
 
     <item android:id="@+id/action_setup_time"
         android:title="@string/setup_time"
-        android:showAsAction="always" />
+        android:showAsAction="ifRoom" />
 
+    <item android:id="@+id/action_logout"
+        android:title="@string/logout"
+        android:showAsAction="ifRoom" />
 
 </menu>

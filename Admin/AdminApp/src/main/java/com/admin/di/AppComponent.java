@@ -1,6 +1,7 @@
 package com.admin.di;
 
 import com.admin.ui.MainListActivity;
+import com.admin.ui.PlayerSettingActivity;
 
 import javax.inject.Singleton;
 
@@ -11,4 +12,5 @@ import dagger.Component;
 @Singleton
 public interface AppComponent {
     void inject(MainListActivity mainActivity);
+    void inject(PlayerSettingActivity playerSettingActivity);
 }

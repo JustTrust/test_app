@@ -14,7 +14,7 @@ import android.widget.TextView;
 
 import com.admin.R;
 import com.admin.model.AppClusterItem;
-import com.admin.parsemodel.ConnectionStatus;
+import com.admin.model.UserConnectionStatus;
 import com.admin.parsemodel.DeviceSettings;
 import com.admin.util.Utils;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -46,12 +46,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private HashMap<String, Marker> markerMap = new HashMap<>();
     private ArrayList<String> deviceName = new ArrayList<>();
-    private Map<ConnectionStatus, DeviceSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
+    private Map<UserConnectionStatus, DeviceSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
     private ArrayAdapter<String> adapter;
     private ClusterManager<AppClusterItem> mClusterManager;
     private Timer timer;
 
-    private String strSearch ="";
+    private String strSearch = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,16 +67,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
 
         actSearch.setOnItemClickListener((parent, view, position, id) -> {
-            for (ConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
-                if (connectionStatus.getDeviceName().equalsIgnoreCase(actSearch.getText().toString())) {
+            for (UserConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
+                if (connectionStatus.deviceName.equalsIgnoreCase(actSearch.getText().toString())) {
                     hideKeyboard(MapsActivity.this);
-                    LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.getLatitude()), Double.valueOf(connectionStatus.getLongitude()));
+                    LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.latitude), Double.valueOf(connectionStatus.longitude));
                     navigate(actSearch.getText().toString(), mLatLong);
                 }
             }
         });
 
-        adapter = new ArrayAdapter<String>(MapsActivity.this, android.R.layout.simple_list_item_1, deviceName);
+        adapter = new ArrayAdapter<>(MapsActivity.this, android.R.layout.simple_list_item_1, deviceName);
         actSearch.setAdapter(adapter);
         timer = new Timer();
 
@@ -89,11 +89,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        //mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setZoomControlsEnabled(true);
         setUpClustering();
         startTimer();
-
     }
 
     @Override
@@ -108,7 +106,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onBackPressed();
         finish();
     }
-
 
     private void setUpClustering() {
         mClusterManager = new ClusterManager<>(this, mMap);
@@ -133,17 +130,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void run() {
                 runOnUiThread(() -> {
                     mMap.clear();
-                    System.out.println("Thread Run");
                     if ((MainListActivity.mIsDeviceScheduleSetUpMap != null) && MainListActivity.mIsDeviceScheduleSetUpMap.size() > 0) {
                         mIsDeviceScheduleSetUpMap.clear();
                         mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
                     }
                     addMarkersToMap();
-
                 });
             }
         }, 10000, 10000);
-
     }
 
     /**
@@ -151,23 +145,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     private void addMarkersToMap() {
         mClusterManager.clearItems();
-        for (ConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
-            if(connectionStatus!=null) {
+        for (UserConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
+            if (connectionStatus != null) {
                 DeviceSettings deviceSettings = mIsDeviceScheduleSetUpMap.get(connectionStatus);
-                if (connectionStatus.getLatitude() != null) {
-                    LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.getLatitude()), Double.valueOf(connectionStatus.getLongitude()));
-                    if (!deviceName.contains(connectionStatus.getDeviceName())) {
-                        deviceName.add(connectionStatus.getDeviceName());
+                if (connectionStatus.latitude != null) {
+                    LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.latitude), Double.valueOf(connectionStatus.longitude));
+                    if (!deviceName.contains(connectionStatus.deviceName)) {
+                        deviceName.add(connectionStatus.deviceName);
                     }
                     String status;
                     BitmapDescriptor markerColor;
-                    System.out.println(connectionStatus.getDeviceName()+" isplay "+connectionStatus.isPlaying());
-                    System.out.println(connectionStatus.getUpdatedAt());
-                    System.out.println("Utils.isConnected(connectionStatus.getUpdatedAt()) : "+Utils.isConnected(connectionStatus.getUpdatedAt()));
-                    if (Utils.isConnected(connectionStatus.getUpdatedAt())) {
-                        int remainTime = connectionStatus.getRemainTime();
+                    if (Utils.isConnected(connectionStatus.createdAt)) {
+                        int remainTime = connectionStatus.remain;
                         if (remainTime > 0) {
-                            if (connectionStatus.isPlaying()) {
+                            if (connectionStatus.isPlaying) {
                                 status = "playing";
                                 //markerColor = getMarkerIcon(getResources().getString(R.string.status_play));
                                 markerColor = getMarkerIcon(R.drawable.play);
@@ -179,7 +170,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         } else {
                             if (mIsDeviceScheduleSetUpMap.containsKey(connectionStatus)) {
                                 status = "pause";
-                               // markerColor = getMarkerIcon(getResources().getString(R.string.status_pause));
+                                // markerColor = getMarkerIcon(getResources().getString(R.string.status_pause));
                                 markerColor = getMarkerIcon(R.drawable.pause);
                             } else {
                                 status = "connected";
@@ -192,14 +183,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         //markerColor = getMarkerIcon(getResources().getString(R.string.status_disconnected));
                         markerColor = getMarkerIcon(R.drawable.disconnect);
                     }
-                    AppClusterItem offsetItem = new AppClusterItem(connectionStatus.getDeviceName() + "_:_" + status,deviceSettings.getStartTime() + "_:_" + deviceSettings.getEndTime() + "_:_" + deviceSettings.getSongInterval() + "_:_" + deviceSettings.getPauseInterval(),markerColor,mLatLong.latitude, mLatLong.longitude);
+                    AppClusterItem offsetItem = new AppClusterItem(connectionStatus.deviceName + "_:_" + status,
+                            deviceSettings.getStartTime() + "_:_" + deviceSettings.getEndTime() + "_:_" + deviceSettings.getSongInterval() + "_:_" + deviceSettings.getPauseInterval(),
+                            markerColor, mLatLong.latitude, mLatLong.longitude);
                     mClusterManager.addItem(offsetItem);
                     mClusterManager.cluster();
                 }
             }
         }
         markerMap.clear();
-        for (Marker mm :mClusterManager.getMarkerCollection().getMarkers()) {
+        for (Marker mm : mClusterManager.getMarkerCollection().getMarkers()) {
             markerMap.put(mm.getTitle().split("_:_")[0], mm);
         }
         adapter.notifyDataSetChanged();
@@ -208,14 +201,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     /**
      * Navigate to device location
+     *
      * @param name
      * @param LatLong
      */
     private void navigate(String name, LatLng LatLong) {
         boolean isFound = false;
         if (LatLong != null) {
-            for (Marker mm :mClusterManager.getMarkerCollection().getMarkers()) {
-                if(mm.getTitle().split("_:_")[0].equalsIgnoreCase(name)) {
+            for (Marker mm : mClusterManager.getMarkerCollection().getMarkers()) {
+                if (mm.getTitle().split("_:_")[0].equalsIgnoreCase(name)) {
                     CameraPosition cameraPosition = new CameraPosition.Builder().target(LatLong).zoom(90).build();
                     mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                     mm.showInfoWindow();
@@ -223,7 +217,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     break;
                 }
             }
-            if(isFound==false){
+            if (isFound == false) {
                 strSearch = name;
                 CameraPosition cameraPosition = new CameraPosition.Builder().target(LatLong).zoom(90).build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
@@ -232,27 +226,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Custom info window for marker
-     */
-    class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
-        CustomInfoWindowAdapter() {
-            mWindow = getLayoutInflater().inflate(R.layout.custom_info_window, null);
-            mContents = getLayoutInflater().inflate(R.layout.custom_info_window, null);
-        }
-        @Override
-        public View getInfoWindow(Marker marker) {
-            render(marker, mWindow);
-            return mWindow;
-        }
-        @Override
-        public View getInfoContents(Marker marker) {
-            render(marker, mContents);
-            return mContents;
-        }
-    }
-
-    /**
      * Render custom info window
+     *
      * @param marker
      * @param view
      */
@@ -265,7 +240,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         TextView txtPlayTime = ((TextView) view.findViewById(R.id.txtPlayTime));
         TextView txtPauseTime = ((TextView) view.findViewById(R.id.txtPauseTime));
 
-        if((marker!=null)&&marker.getTitle()!=null) {
+        if ((marker != null) && marker.getTitle() != null) {
             String[] snippet = marker.getSnippet().split("_:_");
             String[] title = marker.getTitle().split("_:_");
             txtUserName.setText(title[0]);
@@ -290,6 +265,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     /**
      * Convert hex color to hsv for map icon
+     *
      * @param id
      * @return
      */
@@ -297,6 +273,46 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         float[] hsv = new float[3];
         //Color.colorToHSV(Color.parseColor(color), hsv);
         return BitmapDescriptorFactory.fromResource(id);
+    }
+
+    /**
+     * Hide keyboard
+     *
+     * @param mContext
+     */
+    public void hideKeyboard(Context mContext) {
+        try {
+            View view = ((Activity) mContext).getCurrentFocus();
+            if (view != null) {
+                InputMethodManager inputManager = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Custom info window for marker
+     */
+    class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+        CustomInfoWindowAdapter() {
+            mWindow = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+            mContents = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker) {
+            render(marker, mWindow);
+            return mWindow;
+        }
+
+        @Override
+        public View getInfoContents(Marker marker) {
+            render(marker, mContents);
+            return mContents;
+        }
     }
 
     /**
@@ -318,8 +334,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             marker.setSnippet(clusterItem.getSnippet());
             marker.setIcon(clusterItem.getColor());
             //System.out.println("ClusterRenderer.onClusterItemRendered strSearch : " + strSearch);
-            if(!strSearch.equalsIgnoreCase("")){
-                if(clusterItem.getTitle().split("_:_")[0].equalsIgnoreCase(strSearch)) {
+            if (!strSearch.equalsIgnoreCase("")) {
+                if (clusterItem.getTitle().split("_:_")[0].equalsIgnoreCase(strSearch)) {
                     markerMap.get(clusterItem.getTitle().split("_:_")[0]).showInfoWindow();
                     strSearch = "";
                 }
@@ -329,25 +345,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         protected boolean shouldRenderAsCluster(Cluster cluster) {
             return cluster.getSize() > 1;
-        }
-    }
-
-    /**
-     * Hide keyboard
-     *
-     * @param mContext
-     */
-    public void hideKeyboard(Context mContext)
-    {
-        try {
-            View view = ((Activity) mContext).getCurrentFocus();
-            if (view != null) {
-                InputMethodManager inputManager = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputManager.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-            }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
     }
 }

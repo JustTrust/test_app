@@ -5,6 +5,7 @@ package com.player.alarms;
 
 import android.content.Intent;
 import android.media.MediaPlayer;
+import android.support.annotation.NonNull;
 
 import com.player.AppConstant;
 import com.player.model.MusicInfo;
@@ -23,6 +24,7 @@ public class PlaySongsN {
     public static final int STATUS_STOPPED = 2;
     public static final int STATUS_HARD_STOPPED = 3;
     public static final int STATUS_NONE = -1;
+    private PlayListener listener;
     private ArrayList<MusicInfo> mlst_musics = PlayerActivity.mlst_Musics;
     private NotificationMessage playerInfo = null;
     private MediaPlayer m_player;
@@ -33,8 +35,8 @@ public class PlaySongsN {
     private int pauseCounter = 0;
     private int playCounter = 0;
 
-    public PlaySongsN() {
-
+    public PlaySongsN(@NonNull PlayListener listener) {
+        this.listener = listener;
     }
 
     /**
@@ -210,6 +212,10 @@ public class PlaySongsN {
             }
         }
         return false;
+    }
+
+    public interface PlayListener{
+        void updatePlayStatus(int status, int remainTime);
     }
 
 }

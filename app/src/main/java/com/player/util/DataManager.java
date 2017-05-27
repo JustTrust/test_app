@@ -36,6 +36,7 @@ public class DataManager {
     public void saveStatus(UserConnectionStatus status) {
         DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_DEVICES).child(deviceId);
+        status.createdAt = new Date().getTime();
         status.deviceID = deviceId;
         settingRef.setValue(status);
     }
@@ -43,6 +44,7 @@ public class DataManager {
     public void saveCoordinateInStatus(final String latitude, final String longitude) {
         DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_DEVICES).child(deviceId);
+        settingRef.child("createdAt").setValue(new Date().getTime());
         settingRef.child("latitude").setValue(latitude);
         settingRef.child("longitude").setValue(longitude);
     }
@@ -69,6 +71,7 @@ public class DataManager {
     public void storeUserConnection(UserConnectionStatus userConnectionStatus) {
         DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_DEVICES).child(deviceId);
+        userConnectionStatus.createdAt = new Date().getTime();
         connected_dev.setValue(userConnectionStatus);
     }
 
@@ -78,5 +81,15 @@ public class DataManager {
 
     public String getDeviceId() {
         return deviceId;
+    }
+
+    public void logout() {
+        if (getCurrentUser() != null){
+            FirebaseAuth.getInstance().signOut();
+        }
+        DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_DEVICES).child(deviceId);
+        connected_dev.child("createdAt").setValue(new Date().getTime());
+        connected_dev.child("isPlaying").setValue(Boolean.FALSE);
     }
 }

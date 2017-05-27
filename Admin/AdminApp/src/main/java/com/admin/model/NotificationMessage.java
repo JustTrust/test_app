@@ -12,6 +12,7 @@ public class NotificationMessage {
     private JSONObject jsonObject;
     private int m_nSongInterval, m_nPauseInterval;
     private Time m_startTime, m_endTime;
+
     public NotificationMessage(boolean isBackground, Time start, Time end, String songInterval, String pauseInterval, Time realTime) {
         makeJSONObject(isBackground, start, end, songInterval, pauseInterval, realTime);
     }
@@ -27,15 +28,15 @@ public class NotificationMessage {
             jsonObject.put(AppConstant.FIELD_PLAY_INFO, json_Data);
             jsonObject.put(AppConstant.NOTIFY_IS_BACKGROUND, isBackground);
 
-            if(realTime != null) {
+            if (realTime != null) {
                 json_Data.put(AppConstant.FIELD_REAL_START_TIME, realTime.convertString());
             }
-        }catch (JSONException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
     public JSONObject getJsonObject() {
-        return  jsonObject;
+        return jsonObject;
     }
 }

@@ -11,6 +11,7 @@ public class UserConnectionStatus {
     public boolean isPlaying;
     public int remain;
     public String volume;
+    public Long createdAt;
 
     public UserConnectionStatus() {
     }

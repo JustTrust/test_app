@@ -212,7 +212,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     private void updateConnectionStatus(UserConnectionStatus status) {
         if (status != null) {
-            status.longitude = mStr_Song;
+            status.strSong = mStr_Song;
             status.isPlaying = isPlaying;
             status.remain = remainTime;
             int volume_level = am.getStreamVolume(AudioManager.STREAM_MUSIC);
@@ -264,7 +264,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void initUI() {
-        mlst_MusicList = (ListView) this.findViewById(R.id.lst_musics);
         mAdp_music = new MusicListAdapter(mlst_Musics);
         mlst_MusicList.setAdapter(mAdp_music);
         mPrgDlg = new ProgressDialog(this);
@@ -345,7 +344,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     private void playNow(Intent playerInfo) {
         if (playSongs == null) {
-            playSongs = new PlaySongsN();
+            playSongs = new PlaySongsN((status, remainTime) -> updateStatus(status, remainTime));
             playSongs.onStartCommand(playerInfo);
             if (playSongs.play()) {
                 setSongName(playSongs.getFileName(m_currentPlayingSongIndex));
@@ -357,17 +356,12 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     public void updateStatus(final int status, final int remainTime) {
-
-        runOnUiThread(new Runnable() {
-            public void run() {
-                if (status != PlaySongsN.STATUS_PLAYING) {
-                    setAppStatus(AppConstant.PAUSE);
-                } else {
-                    setAppStatus(AppConstant.PLAYING);
-                }
-                setRemainTime(remainTime);
-            }
-        });
+        if (status != PlaySongsN.STATUS_PLAYING) {
+            setAppStatus(AppConstant.PAUSE);
+        } else {
+            setAppStatus(AppConstant.PLAYING);
+        }
+        setRemainTime(remainTime);
     }
 
     private void setPlayerInfo(Intent intent) {
@@ -385,7 +379,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             break;
             case AppConstant.INTENT_UPDATE:
                 if (messageData != null) {
-
                     //stop the current player if there is any update from the
                     //notification and reset the counter back to 0
                     playerDestory();
@@ -394,7 +387,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                     if (isPlayNow(messageData)) {
                         playNow(intent);
                         //need to offset the seconds for this
-
                     }
                     StartTime.setAlarm(this, messageData);
                 }
@@ -444,6 +436,12 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
         if (id == R.id.action_setup_time) {
             loadSettingsAndShowDialog();
+            return true;
+        }
+        if (id == R.id.action_logout) {
+            playSongs.onDestroy();
+            dataManager.logout();
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
