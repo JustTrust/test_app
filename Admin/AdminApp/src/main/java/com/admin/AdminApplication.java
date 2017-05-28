@@ -38,7 +38,7 @@ public class AdminApplication extends Application {
                 .build();
         mCheckConnectionStatus = checkConnectionStatus();
         FirebaseApp.initializeApp(this);
-        new MovementReceiver();
+        new MovementReceiver(this);
     }
 
     private Subscription checkConnectionStatus() {

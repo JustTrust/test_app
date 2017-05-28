@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.util.ArrayMap;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,6 +28,8 @@ import com.admin.model.Time;
 import com.admin.model.UserConnectionStatus;
 import com.admin.util.DataManager;
 import com.admin.util.Utils;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -40,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -97,6 +97,33 @@ public class MainListActivity extends FragmentActivity {
 
         initUI();
         getPlayersInfo();
+        authenticateUser();
+    }
+
+    private void authenticateUser() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            tryToLogin();
+        }
+    }
+
+    private void tryToLogin() {
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(AppConstant.ADMIN_EMAIL, AppConstant.ADMIN_PASS)
+                .addOnCompleteListener(this, task -> {
+                    if (!task.isSuccessful()) {
+                        registerNewUser();
+                    }
+                });
+    }
+
+    private void registerNewUser() {
+        FirebaseAuth.getInstance().createUserWithEmailAndPassword(AppConstant.ADMIN_EMAIL, AppConstant.ADMIN_PASS)
+                .addOnCompleteListener(this, task -> {
+                    if (!task.isSuccessful()) {
+                        Toast.makeText(MainListActivity.this, task.getException().getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     private void getPlayersInfo() {

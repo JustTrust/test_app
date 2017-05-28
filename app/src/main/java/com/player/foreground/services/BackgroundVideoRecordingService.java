@@ -9,23 +9,34 @@ import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.IBinder;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.player.PlayerApplication;
+import com.player.util.DataManager;
 import com.player.util.PermissionUtil;
 
+import java.io.File;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class BackgroundVideoRecordingService extends Service{
+import javax.inject.Inject;
 
-    private static final int RECORD_DURATION = 30;//secs
+public class BackgroundVideoRecordingService extends Service {
+
+    private static final int RECORD_DURATION = 5;//secs
+    private static final String TAG = BackgroundVideoRecordingService.class.getSimpleName();
     private WindowManager windowManager;
     private SurfaceView surfaceView;
     private Camera camera = null;
@@ -34,17 +45,20 @@ public class BackgroundVideoRecordingService extends Service{
     private int idFrontCamera = -1;
     private int idBackCamera = -1;
     private int idCurrentCamera = -1;
-    private MediaRecorder mediaRecorder = null;
+    private MediaRecorder mediaRecorder;
     private boolean isRecording;
     private String filepath;
 
+    @Inject
+    DataManager dataManager;
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-        if (PermissionUtil.checkCameraPermissions(this)){
-                //Dont start recording is already recording.
-                if (!isRecording) initRecorder();
-            }
+        PlayerApplication.getAppComponent().inject(this);
+        if (PermissionUtil.checkCameraPermissions(this)) {
+            //Dont start recording is already recording.
+            if (!isRecording) initRecorder();
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -53,7 +67,7 @@ public class BackgroundVideoRecordingService extends Service{
         return null;
     }
 
-    private void startTimer(){
+    private void startTimer() {
         Timer timer = new Timer();
 
         timer.schedule(new TimerTask() {
@@ -61,7 +75,7 @@ public class BackgroundVideoRecordingService extends Service{
             public void run() {
                 stopSelf();
             }
-        },RECORD_DURATION * 1000);
+        }, RECORD_DURATION * 1000);
     }
 
     @Override
@@ -69,7 +83,7 @@ public class BackgroundVideoRecordingService extends Service{
         stopRecorder();
     }
 
-    private void stopRecorder(){
+    private void stopRecorder() {
 
         if (isRecording) mediaRecorder.stop();
         mediaRecorder.reset();
@@ -79,6 +93,12 @@ public class BackgroundVideoRecordingService extends Service{
 
         windowManager.removeView(surfaceView);
         isRecording = false;
+        mediaRecorder = null;
+
+        if (!TextUtils.isEmpty(filepath)){
+            dataManager.storeFileInStorage(filepath);
+            filepath = null;
+        }
     }
 
     private boolean initCamera() {
@@ -101,9 +121,9 @@ public class BackgroundVideoRecordingService extends Service{
                 }
             }
 
-            if(hasFrontCamera)idCurrentCamera = idFrontCamera;
+            if (hasFrontCamera) idCurrentCamera = idFrontCamera;
 
-            if(hasBackCamera)idCurrentCamera = idBackCamera;
+            if (hasBackCamera) idCurrentCamera = idBackCamera;
 
             return true;
 
@@ -112,9 +132,9 @@ public class BackgroundVideoRecordingService extends Service{
         }
     }
 
-    private void initRecorder(){
+    private void initRecorder() {
 
-        if(!initCamera()) {
+        if (!initCamera()) {
             return;
         }
 
@@ -124,7 +144,7 @@ public class BackgroundVideoRecordingService extends Service{
         surfaceView = new SurfaceView(this);
 
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
-                1, 1,
+                130, 200,
                 WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT
@@ -137,33 +157,31 @@ public class BackgroundVideoRecordingService extends Service{
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
+                filepath = null;
+                if (mediaRecorder != null) stopRecorder();
+                camera = Camera.open(idCurrentCamera);
+                camera.unlock();
+                mediaRecorder = new MediaRecorder();
+
+                mediaRecorder.setPreviewDisplay(surfaceHolder.getSurface());
+                mediaRecorder.setCamera(camera);
+                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+                mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+                mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_480P));
+                filepath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+                        .getAbsolutePath() + "/" + DateFormat.format("yyyy-MM-dd_HH-mm-ss", new Date().getTime()) +
+                        ".mp4";
+                mediaRecorder.setOutputFile(filepath);
 
                 try {
-                    camera = Camera.open(idCurrentCamera);
-                    mediaRecorder = new MediaRecorder();
-
-                    mediaRecorder.setPreviewDisplay(surfaceHolder.getSurface());
-                    mediaRecorder.setCamera(camera);
-                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-                    mediaRecorder.setVideoFrameRate(30);
-                    filepath = Environment.getExternalStoragePublicDirectory (Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() +"/"+
-                            DateFormat.format("yyyy-MM-dd_HH-mm-ss", new Date().getTime())+
-                            ".mp4";
-
-                    mediaRecorder.setOutputFile(filepath);
                     mediaRecorder.prepare();
                     mediaRecorder.start();
-
                     isRecording = true;
-
                     startTimer();
                 } catch (Exception e) {
                     isRecording = false;
                     e.printStackTrace();
+                    Log.d(TAG, "surfaceCreated: " + e.getMessage());
                 }
             }
 

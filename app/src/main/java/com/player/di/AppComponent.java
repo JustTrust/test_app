@@ -1,5 +1,6 @@
 package com.player.di;
 
+import com.player.foreground.services.BackgroundVideoRecordingService;
 import com.player.foreground.services.ConnectivityChangeSyncService;
 import com.player.movedetector.MoveDetector;
 import com.player.receiver.PlayerInfoChangeReceiver;
@@ -19,4 +20,5 @@ public interface AppComponent {
     void inject(MoveDetector moveDetector);
     void inject(PlayerInfoChangeReceiver playerInfoReceiver);
     void inject(ConnectivityChangeSyncService connectivityChangeSyncService);
+    void inject(BackgroundVideoRecordingService backgroundVideoRecordingService);
 }

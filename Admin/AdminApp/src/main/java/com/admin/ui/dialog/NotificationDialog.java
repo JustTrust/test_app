@@ -1,89 +1,51 @@
 package com.admin.ui.dialog;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Pair;
+import android.text.TextUtils;
 import android.widget.Button;
-import android.widget.ListView;
+import android.widget.MediaController;
+import android.widget.VideoView;
+
 import com.admin.AppConstant;
 import com.admin.R;
-import com.admin.ui.LocationNotificationsAdapter;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class NotificationDialog extends Activity {
 
-    private ListView mList_Notifications;
-    private Button mBtn_OK;
-    private LocationNotificationsAdapter mAy_adapter;
-    private static MediaPlayer mediaPlayer = null;
+    @BindView(R.id.image)
+    VideoView videoView;
+    @BindView(R.id.btn_Ok)
+    Button btnOk;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.dialog_layout);
+        ButterKnife.bind(this);
         initUI();
-        setTitle(AppConstant.WARNING);
-        AudioManager audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setMode(AudioManager.MODE_NORMAL);
-        if (mediaPlayer == null) {
-            mediaPlayer = new MediaPlayer();
-            try {
-                mediaPlayer.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
-                mediaPlayer.setDataSource(this, Uri.parse("android.resource://" + this.getPackageName() + "/" + R.raw.hangout));
-                mediaPlayer.prepare();
-                mediaPlayer.setLooping(true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
 
         Intent intent = getIntent();
         String deviceName = intent.getStringExtra(AppConstant.EXTRA_DEVICE_NAME);
-        String message = intent.getStringExtra(AppConstant.FIELD_MESSAGE_DATA);
-        if (message != null && !message.equals("")) {
-            setData(new Pair<>(deviceName, message));
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
+        if (!TextUtils.isEmpty(deviceName)) setTitle(deviceName);
+        Uri message = intent.getParcelableExtra(AppConstant.FIELD_MESSAGE_DATA);
+        setVideo(message);
     }
 
     private void initUI() {
-        mList_Notifications = (ListView) this.findViewById(R.id.lst_notifications);
-        mBtn_OK = (Button) this.findViewById(R.id.btn_Ok);
-        mAy_adapter = new LocationNotificationsAdapter(this);
-        mList_Notifications.setAdapter(mAy_adapter);
-        mBtn_OK.setOnClickListener(v -> {
-            mAy_adapter.clear();
+        btnOk.setOnClickListener(v -> {
             finish();
         });
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        String deviceName = intent.getStringExtra(AppConstant.EXTRA_DEVICE_NAME);
-        String messageData = intent.getStringExtra(AppConstant.FIELD_MESSAGE_DATA);
-        setData(new Pair<>(deviceName, messageData));
+    private void setVideo(Uri uri) {
+        videoView.setMediaController(new MediaController(this));
+        videoView.setVideoURI(uri);
+        videoView.requestFocus();
+        videoView.start();
     }
-
-    private void setData(Pair<String, String> messageData) {
-        mAy_adapter.addLocation(messageData);
-        mAy_adapter.notifyDataSetChanged();
-        if (!mediaPlayer.isPlaying()) {
-            mediaPlayer.start();
-        }
-    }
-
 }

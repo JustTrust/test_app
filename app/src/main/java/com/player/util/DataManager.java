@@ -2,22 +2,31 @@ package com.player.util;
 
 
 import android.content.Context;
+import android.net.Uri;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.util.Log;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.player.AppConstant;
 import com.player.model.Message;
 import com.player.model.PhoneSettings;
 import com.player.model.UserConnectionStatus;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 
 public class DataManager {
 
+    private static final String TAG = DataManager.class.getSimpleName();
     private Context context;
     private String deviceId;
 
@@ -49,11 +58,6 @@ public class DataManager {
         settingRef.child("longitude").setValue(longitude);
     }
 
-    /**
-     * @param latitude
-     * @param longitude
-     * @desc Send notification to admin device for location change warning
-     */
     public void sendNotificationToAdmin(double latitude, double longitude) {
 
         Date now = new Date();
@@ -63,6 +67,7 @@ public class DataManager {
         int min = cal.get(Calendar.MINUTE);
 
         Message msg = new Message(latitude, longitude, hours + ":" + min);
+        msg.deviceId = deviceId;
         DatabaseReference admMsg = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId);
         admMsg.setValue(msg);
@@ -75,7 +80,7 @@ public class DataManager {
         connected_dev.setValue(userConnectionStatus);
     }
 
-    public FirebaseUser getCurrentUser(){
+    public FirebaseUser getCurrentUser() {
         return FirebaseAuth.getInstance().getCurrentUser();
     }
 
@@ -84,12 +89,29 @@ public class DataManager {
     }
 
     public void logout() {
-        if (getCurrentUser() != null){
+        if (getCurrentUser() != null) {
             FirebaseAuth.getInstance().signOut();
         }
         DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_DEVICES).child(deviceId);
         connected_dev.child("createdAt").setValue(new Date().getTime());
         connected_dev.child("isPlaying").setValue(Boolean.FALSE);
+    }
+
+    public void storeFileInStorage(String filepath) {
+        File file = new File(filepath);
+        Uri path = Uri.fromFile(file);
+        StorageReference fileRef = FirebaseStorage.getInstance()
+                .getReference().child(deviceId).child(file.getName());
+        fileRef.putFile(path).addOnCompleteListener(task -> {
+            Message msg = new Message();
+            msg.deviceId = deviceId;
+            msg.videoLink = deviceId + "/" + file.getName();
+            DatabaseReference admMsg = FirebaseDatabase.getInstance().getReference()
+                    .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId);
+            admMsg.setValue(msg);
+        }).addOnFailureListener(e -> {
+            Log.d(TAG, "storeFileInStorage: file wasnt send "+filepath );
+        });
     }
 }
