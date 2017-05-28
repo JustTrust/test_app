@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,18 +27,12 @@ import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
 import com.admin.model.Time;
 import com.admin.model.UserConnectionStatus;
-import com.admin.parsemodel.DeviceSettings;
 import com.admin.util.DataManager;
 import com.admin.util.Utils;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
-import com.parse.ParseInstallation;
-import com.parse.ParsePush;
-import com.parse.ParseQuery;
-
-import org.json.JSONObject;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -63,7 +56,6 @@ public class MainListActivity extends FragmentActivity {
 
     private static final String LOG_TAG = MainListActivity.class.getName();
 
-    public static Map<UserConnectionStatus, DeviceSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
     private static ArrayList<String> mAry_listMessages = new ArrayList<>();
 
     @BindView(R.id.imgLeft)
@@ -114,7 +106,6 @@ public class MainListActivity extends FragmentActivity {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                         mArlst_players.add(dataSnapshot.getValue(UserConnectionStatus.class));
-                        fillDeviceScheduleMapSynchronous();
                         mAdpt_playerApps.notifyDataSetChanged();
                         if (pDialog != null) pDialog.dismiss();
                     }
@@ -152,31 +143,9 @@ public class MainListActivity extends FragmentActivity {
 
     }
 
-    private void fillDeviceScheduleMapSynchronous() {
-        mIsDeviceScheduleSetUpMap.clear();
-//        ParseQuery<DeviceSettings> deviceSettingsParseQuery = ParseQuery.getQuery(DeviceSettings.class);
-//        try {
-//            List<DeviceSettings> devicesSettings = deviceSettingsParseQuery.find();
-//            for (UserConnectionStatus connectionStatus : mArlst_players) {
-//                String connectionDeviceId = connectionStatus.deviceID;
-//                for (DeviceSettings settings : devicesSettings) {
-//                    if (settings != null) {
-//                        String settingsDeviceId = settings.getDeviceId();
-//                        if (settingsDeviceId != null && settingsDeviceId.equals(connectionDeviceId) &&
-//                                !TextUtils.isEmpty(settings.getStartTime()) &&
-//                                !TextUtils.isEmpty(settings.getEndTime())) {
-//                            mIsDeviceScheduleSetUpMap.put(connectionStatus, settings);
-//                        }
-//                    }
-//                }
-//            }
-//        } catch (ParseException e1) {
-//            Log.e(LOG_TAG, e1.toString());
-//        }
-    }
-
     private void initUI() {
-        mAdpt_playerApps = new PlayerAppListAdapter(mArlst_players);
+        mAdpt_playerApps = new PlayerAppListAdapter(mArlst_players, (deviceID, isChecked) ->
+                dataManager.setGpsStatus(deviceID, isChecked));
         mLst_playerApps.setAdapter(mAdpt_playerApps);
     }
 
@@ -189,15 +158,6 @@ public class MainListActivity extends FragmentActivity {
     void onImgClick() {
         Intent map_intent = new Intent(MainListActivity.this, MapsActivity.class);
         startActivity(map_intent);
-    }
-
-    private void sendNotification(JSONObject jsonData, String deviceID) {
-        ParsePush push = new ParsePush();
-        ParseQuery query = ParseInstallation.getQuery();
-        query.whereEqualTo(AppConstant.FIELD_DEVICE_ID, deviceID);
-        push.setQuery(query);
-        push.setData(jsonData);
-        push.sendInBackground();
     }
 
     @Override

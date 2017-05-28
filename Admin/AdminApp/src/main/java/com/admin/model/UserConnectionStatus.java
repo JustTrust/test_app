@@ -21,20 +21,6 @@ public class UserConnectionStatus {
         this.deviceID = deviceID;
     }
 
-    public UserConnectionStatus(String deviceName, String deviceID, boolean gpsEnabled,
-                                String strSong, String latitude, String longitude,
-                                boolean isPlaying, int remain, String volume) {
-        this.deviceName = deviceName;
-        this.deviceID = deviceID;
-        this.gpsEnabled = gpsEnabled;
-        this.strSong = strSong;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.isPlaying = isPlaying;
-        this.remain = remain;
-        this.volume = volume;
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj == null) return false;

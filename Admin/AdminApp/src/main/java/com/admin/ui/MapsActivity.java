@@ -4,18 +4,19 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.util.ArrayMap;
 import android.text.Html;
+import android.util.ArrayMap;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 
+import com.admin.AppConstant;
 import com.admin.R;
 import com.admin.model.AppClusterItem;
+import com.admin.model.PhoneSettings;
 import com.admin.model.UserConnectionStatus;
-import com.admin.parsemodel.DeviceSettings;
 import com.admin.util.Utils;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -26,6 +27,10 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterManager;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
@@ -34,7 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -46,7 +50,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private HashMap<String, Marker> markerMap = new HashMap<>();
     private ArrayList<String> deviceName = new ArrayList<>();
-    private Map<UserConnectionStatus, DeviceSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
+    private Map<UserConnectionStatus, PhoneSettings> mIsDeviceScheduleSetUpMap = new ArrayMap<>();
     private ArrayAdapter<String> adapter;
     private ClusterManager<AppClusterItem> mClusterManager;
     private Timer timer;
@@ -64,8 +68,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         actSearch = (AutoCompleteTextView) findViewById(R.id.actSearch);
 
-        mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
-
         actSearch.setOnItemClickListener((parent, view, position, id) -> {
             for (UserConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
                 if (connectionStatus.deviceName.equalsIgnoreCase(actSearch.getText().toString())) {
@@ -79,7 +81,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         adapter = new ArrayAdapter<>(MapsActivity.this, android.R.layout.simple_list_item_1, deviceName);
         actSearch.setAdapter(adapter);
         timer = new Timer();
-
     }
 
     @Override
@@ -91,7 +92,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         mMap.getUiSettings().setZoomControlsEnabled(true);
         setUpClustering();
-        startTimer();
+        getDevices();
+    }
+
+    private void getDevices() {
+        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        mIsDeviceScheduleSetUpMap.clear();
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
+                            FirebaseDatabase.getInstance().getReference()
+                                    .child(AppConstant.NODE_SETTING).child(status.deviceID)
+                                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(DataSnapshot dataSnapshot) {
+                                            mIsDeviceScheduleSetUpMap.put(status, dataSnapshot.getValue(PhoneSettings.class));
+                                            addMarkersToMap();
+                                        }
+
+                                        @Override
+                                        public void onCancelled(DatabaseError databaseError) {
+
+                                        }
+                                    });
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
     }
 
     @Override
@@ -119,26 +152,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         addMarkersToMap();
     }
 
-    /**
-     * Timer to refresh map
-     */
-    private void startTimer() {
-
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                runOnUiThread(() -> {
-                    mMap.clear();
-                    if ((MainListActivity.mIsDeviceScheduleSetUpMap != null) && MainListActivity.mIsDeviceScheduleSetUpMap.size() > 0) {
-                        mIsDeviceScheduleSetUpMap.clear();
-                        mIsDeviceScheduleSetUpMap.putAll(MainListActivity.mIsDeviceScheduleSetUpMap);
-                    }
-                    addMarkersToMap();
-                });
-            }
-        }, 10000, 10000);
-    }
 
     /**
      * Add markers to map
@@ -147,7 +160,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mClusterManager.clearItems();
         for (UserConnectionStatus connectionStatus : mIsDeviceScheduleSetUpMap.keySet()) {
             if (connectionStatus != null) {
-                DeviceSettings deviceSettings = mIsDeviceScheduleSetUpMap.get(connectionStatus);
+                PhoneSettings deviceSettings = mIsDeviceScheduleSetUpMap.get(connectionStatus);
                 if (connectionStatus.latitude != null) {
                     LatLng mLatLong = new LatLng(Double.valueOf(connectionStatus.latitude), Double.valueOf(connectionStatus.longitude));
                     if (!deviceName.contains(connectionStatus.deviceName)) {
@@ -184,7 +197,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         markerColor = getMarkerIcon(R.drawable.disconnect);
                     }
                     AppClusterItem offsetItem = new AppClusterItem(connectionStatus.deviceName + "_:_" + status,
-                            deviceSettings.getStartTime() + "_:_" + deviceSettings.getEndTime() + "_:_" + deviceSettings.getSongInterval() + "_:_" + deviceSettings.getPauseInterval(),
+                            deviceSettings.startTime + "_:_" + deviceSettings.endTime + "_:_" + deviceSettings.songInterval + "_:_" + deviceSettings.pauseInterval,
                             markerColor, mLatLong.latitude, mLatLong.longitude);
                     mClusterManager.addItem(offsetItem);
                     mClusterManager.cluster();
@@ -217,7 +230,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     break;
                 }
             }
-            if (isFound == false) {
+            if (!isFound) {
                 strSearch = name;
                 CameraPosition cameraPosition = new CameraPosition.Builder().target(LatLong).zoom(90).build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
@@ -270,8 +283,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * @return
      */
     private BitmapDescriptor getMarkerIcon(int id) {
-        float[] hsv = new float[3];
-        //Color.colorToHSV(Color.parseColor(color), hsv);
         return BitmapDescriptorFactory.fromResource(id);
     }
 

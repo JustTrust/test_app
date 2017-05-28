@@ -89,6 +89,7 @@ public class PlayerSettingActivity extends Activity {
         mBtn_update.setOnClickListener(v -> {
             NotificationMessage message = getPlayerInfo();
             dataManager.sendPushNotification(message, mStr_DeviceID);
+            finish();
         });
 
         btnVolumeUP.setOnClickListener(v -> {

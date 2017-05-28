@@ -1,15 +1,16 @@
 package com.admin.util;
 
-
 import android.content.Context;
-import android.provider.Settings;
 
 import com.admin.AppConstant;
 import com.admin.model.Message;
 import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
-import com.google.firebase.database.DatabaseReference;
+import com.admin.model.UserConnectionStatus;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class DataManager {
     private Context context;
@@ -19,18 +20,26 @@ public class DataManager {
     }
 
     public void saveSettings(PhoneSettings phoneSettings) {
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId);
-        settingRef.setValue(phoneSettings);
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId)
+                .setValue(phoneSettings);
     }
 
     public void sendPushNotification(NotificationMessage message, String deviceId) {
         FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_MESSAGES).child(deviceId).setValue(new Message(message.getJsonObject().toString()));
+                .child(AppConstant.NODE_MESSAGES).child(deviceId)
+                .setValue(new Message(message.getJsonObject().toString()));
     }
 
     public void sendVolumePushNotification(int volume, String deviceId) {
         FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_MESSAGES).child(deviceId).setValue(new Message(volume));
+    }
+
+    public void setGpsStatus(String deviceID, Boolean isChecked) {
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_DEVICES).child(deviceID)
+                .child("gpsEnabled")
+                .setValue(isChecked);
     }
 }

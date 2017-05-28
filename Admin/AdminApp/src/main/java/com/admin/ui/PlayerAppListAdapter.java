@@ -22,10 +22,11 @@ import java.util.ArrayList;
 public class PlayerAppListAdapter extends BaseAdapter {
 
     private ArrayList<UserConnectionStatus> mArlst_players;
-    private boolean m_isCompleted = true;
+    private GpsChangedListener listener;
 
-    public PlayerAppListAdapter(ArrayList<UserConnectionStatus> mArlst_players) {
+    public PlayerAppListAdapter(ArrayList<UserConnectionStatus> mArlst_players, GpsChangedListener listener) {
         this.mArlst_players = mArlst_players;
+        this.listener = listener;
     }
 
     @Override
@@ -86,16 +87,11 @@ public class PlayerAppListAdapter extends BaseAdapter {
         }
 
         holder.toggle_GPS.setOnCheckedChangeListener(null);
-        if (m_isCompleted) {
-            holder.toggle_GPS.setChecked(mArlst_players.get(position).gpsEnabled);
-        }
+        holder.toggle_GPS.setChecked(mArlst_players.get(position).gpsEnabled);
 
         if (isSettingsAvailableForDevice) {
-            view.setOnClickListener(v -> {
-                Intent intent = new Intent(context, PlayerSettingActivity.class);
-                intent.putExtra(AppConstant.FIELD_DEVICE_ID, mArlst_players.get(position).deviceID);
-                context.startActivity(intent);
-            });
+            view.setOnClickListener(v -> context.startActivity(new Intent(context, PlayerSettingActivity.class)
+                    .putExtra(AppConstant.FIELD_DEVICE_ID, mArlst_players.get(position).deviceID)));
             holder.toggle_GPS.setEnabled(true);
         } else {
             view.setOnClickListener(null);
@@ -103,15 +99,9 @@ public class PlayerAppListAdapter extends BaseAdapter {
         }
 
         holder.toggle_GPS.setOnCheckedChangeListener((buttonView, isChecked) -> {
-//            m_isCompleted = false;
-//            JSONObject jsonSendData = new JSONObject();
-//            mArlst_players.get(position).gpsEnabled = isChecked;
-//            mArlst_players.get(position).saveInBackground(new SaveCallback() {
-//                @Override
-//                public void done(ParseException e) {
-//                    m_isCompleted = true;
-//                }
-//            });
+            if (listener != null){
+                listener.onGpsStatusChanged(mArlst_players.get(position).deviceID, isChecked);
+            }
         });
         return view;
     }
@@ -120,5 +110,9 @@ public class PlayerAppListAdapter extends BaseAdapter {
         TextView txt_deviceName;
         TextView txt_connStatus;
         ToggleButton toggle_GPS;
+    }
+
+    interface GpsChangedListener{
+        void onGpsStatusChanged(String deviceID, Boolean isChecked);
     }
 }

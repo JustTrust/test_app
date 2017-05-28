@@ -17,6 +17,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
+import com.player.util.PermissionUtil;
+
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,10 +41,10 @@ public class BackgroundVideoRecordingService extends Service{
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        //Dont start recording is already recording.
-        if(!isRecording)
-            initRecorder();
-
+        if (PermissionUtil.checkCameraPermissions(this)){
+                //Dont start recording is already recording.
+                if (!isRecording) initRecorder();
+            }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -69,15 +71,13 @@ public class BackgroundVideoRecordingService extends Service{
 
     private void stopRecorder(){
 
-        mediaRecorder.stop();
+        if (isRecording) mediaRecorder.stop();
         mediaRecorder.reset();
         mediaRecorder.release();
 
-        camera.lock();
         camera.release();
 
         windowManager.removeView(surfaceView);
-
         isRecording = false;
     }
 
@@ -114,10 +114,7 @@ public class BackgroundVideoRecordingService extends Service{
 
     private void initRecorder(){
 
-
         if(!initCamera()) {
-
-            //TODO Add some exception handling code here
             return;
         }
 
@@ -142,17 +139,17 @@ public class BackgroundVideoRecordingService extends Service{
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
 
                 try {
-
                     camera = Camera.open(idCurrentCamera);
                     mediaRecorder = new MediaRecorder();
-                    camera.unlock();
 
                     mediaRecorder.setPreviewDisplay(surfaceHolder.getSurface());
                     mediaRecorder.setCamera(camera);
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
-
+                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+                    mediaRecorder.setVideoFrameRate(30);
                     filepath = Environment.getExternalStoragePublicDirectory (Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() +"/"+
                             DateFormat.format("yyyy-MM-dd_HH-mm-ss", new Date().getTime())+
                             ".mp4";
@@ -164,17 +161,10 @@ public class BackgroundVideoRecordingService extends Service{
                     isRecording = true;
 
                     startTimer();
-
                 } catch (Exception e) {
-
+                    isRecording = false;
                     e.printStackTrace();
-
-                    //TODO Add some exception handling code here
-
-                    return;
                 }
-
-
             }
 
             @Override

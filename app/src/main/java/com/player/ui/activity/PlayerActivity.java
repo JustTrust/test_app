@@ -3,11 +3,10 @@ package com.player.ui.activity;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.location.LocationManager;
+import android.location.Location;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -25,10 +24,12 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.places.Places;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -44,6 +45,7 @@ import com.player.alarms.StartTime;
 import com.player.alarms.TimerWakeLock;
 import com.player.foreground.events.ConnectivityChangedEvent;
 import com.player.foreground.events.StopPlayerEvent;
+import com.player.foreground.services.BackgroundVideoRecordingService;
 import com.player.model.MusicInfo;
 import com.player.model.NotificationMessage;
 import com.player.model.PhoneSettings;
@@ -71,15 +73,19 @@ import butterknife.ButterKnife;
 import rx.Observable;
 import rx.subscriptions.CompositeSubscription;
 
+import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY;
+
 /**
  * @desc PlayerActivity for player interface
  */
 public class PlayerActivity extends Activity implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private static final String LOG_TAG = PlayerActivity.class.getName();
     private static final int PERMISSIONS_REQUEST_LOCATION = 11;
     private static final int PERMISSIONS_REQUEST_READ = 12;
+    private static final int PERMISSIONS_REQUEST_CAMERA = 13;
+    private static final String TAG = PlayerActivity.class.getSimpleName();
     public static boolean mIs_GPSEnabled = false;
     public static int m_currentPlayingSongIndex = 0;
     public static ArrayList<MusicInfo> mlst_Musics = new ArrayList<>();
@@ -115,12 +121,17 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private MoveDetector mMove_dector;
     private Cursor mCursor;
     private boolean isPlaying;
+    private boolean isLocationSending;
     private int remainTime;
     private ProgressDialog mPrgDlg;
     private PhoneSettings mDeviceSettings;
     private GoogleApiClient googleApiClient;
     private CompositeSubscription compositeSubscription = new CompositeSubscription();
     private boolean progress;
+    private LocationRequest locationReuest = LocationRequest.create()
+            .setInterval(1600)
+            .setMaxWaitTime(12000)
+            .setPriority(PRIORITY_HIGH_ACCURACY);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,7 +147,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         }
         getMusicsFromStorage();
         initUI();
-        initMoveDector();
+        initMoveDetector();
 
         TimerWakeLock.acquireCpuWakeLock(this);
 
@@ -149,7 +160,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         super.onStart();
         setSendingConnSetting();
         EventBus.getDefault().register(this);
-        updateLocation();
+        buildGoogleApiClient();
+        PermissionUtil.requestCameraPermissions(this, PERMISSIONS_REQUEST_CAMERA);
     }
 
     private void startTimer() {
@@ -182,8 +194,32 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             playSongs.stopPlaying();*/
     }
 
-    private void initMoveDector() {
-        mMove_dector = new MoveDetector(googleApiClient);
+    private void initMoveDetector() {
+        mMove_dector = new MoveDetector(() -> getAndSendLocation());
+    }
+
+    private void getAndSendLocation() {
+        if (!isLocationSending && PermissionUtil.checkLocationPermission(PERMISSIONS_REQUEST_LOCATION, this)) {
+            if (googleApiClient.isConnected()) {
+                isLocationSending = true;
+                LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationReuest, this);
+            }
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.i(TAG, "send location data");
+        if (location != null) {
+            dataManager.saveCoordinateInStatus(String.valueOf(location.getLatitude()),
+                    String.valueOf(location.getLongitude()));
+            dataManager.sendNotificationToAdmin(location.getLatitude(), location.getLongitude());
+
+            //Start recording
+            this.startService(new Intent(this, BackgroundVideoRecordingService.class));
+            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+        }
+        isLocationSending = false;
     }
 
     private void setSendingConnSetting() {
@@ -234,11 +270,9 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         dataManager.saveStatus(status);
     }
 
-    // get list of media file from sdcard
     private void getMusicsFromStorage() {
 
         if (!PermissionUtil.checkReadPermission(PERMISSIONS_REQUEST_READ, this)) return;
-
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         mCursor = getContentResolver().query(
@@ -279,7 +313,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-
             }
         });
     }
@@ -366,7 +399,17 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     private void setPlayerInfo(Intent intent) {
         int cateogry_id = intent.getIntExtra(AppConstant.INTENT_CATEGORY, 0);
-        NotificationMessage messageData = (NotificationMessage) intent.getSerializableExtra(AppConstant.FIELD_MESSAGE_DATA);
+        Object obj = intent.getSerializableExtra(AppConstant.FIELD_MESSAGE_DATA);
+        NotificationMessage messageData;
+        if (obj instanceof NotificationMessage) {
+            messageData = (NotificationMessage) obj;
+        } else if (obj instanceof String) {
+            messageData = new NotificationMessage((String) obj);
+        } else {
+            return;
+        }
+        intent.removeExtra(AppConstant.FIELD_MESSAGE_DATA);
+        intent.putExtra(AppConstant.FIELD_MESSAGE_DATA, messageData);
         switch (cateogry_id) {
             case AppConstant.INTENT_START: {
                 playNow(intent);
@@ -374,32 +417,27 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                 //need to set the alarm for next day as well.
                 messageData.clearRealStartTime();
                 StartTime.setAlarm(this, messageData);
-
             }
             break;
             case AppConstant.INTENT_UPDATE:
-                if (messageData != null) {
-                    //stop the current player if there is any update from the
-                    //notification and reset the counter back to 0
-                    playerDestory();
-                    m_currentPlayingSongIndex = 0;
+                //stop the current player if there is any update from the
+                //notification and reset the counter back to 0
+                playerDestory();
+                m_currentPlayingSongIndex = 0;
 
-                    if (isPlayNow(messageData)) {
-                        playNow(intent);
-                        //need to offset the seconds for this
-                    }
-                    StartTime.setAlarm(this, messageData);
+                if (isPlayNow(messageData)) {
+                    playNow(intent);
+                    //need to offset the seconds for this
                 }
+                StartTime.setAlarm(this, messageData);
                 break;
         }
-        if (messageData != null) {
-            mTxt_songInterval.setText("" + messageData.getSongInterval());
-            mTxt_pauseInterval.setText("" + messageData.getPauseInterval());
-            System.out.println("messageData.getStartTime() = " + messageData.getStartTime());
-            System.out.println("messageData.getEndTime() = " + messageData.getEndTime());
-            mTxt_startTime.setText("" + messageData.getStartTime().convertString());
-            mTxt_endTime.setText("" + messageData.getEndTime().convertString());
-        }
+        mTxt_songInterval.setText(String.valueOf(messageData.getSongInterval()));
+        mTxt_pauseInterval.setText(String.valueOf(messageData.getPauseInterval()));
+        System.out.println("messageData.getStartTime() = " + messageData.getStartTime());
+        System.out.println("messageData.getEndTime() = " + messageData.getEndTime());
+        mTxt_startTime.setText(messageData.getStartTime().convertString());
+        mTxt_endTime.setText(messageData.getEndTime().convertString());
     }
 
     private boolean isPlayNow(NotificationMessage data) {
@@ -425,7 +463,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
@@ -448,7 +485,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void loadSettingsAndShowDialog() {
-
         mPrgDlg.show();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_SETTING).child(dataManager.getDeviceId());
@@ -466,7 +502,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                 afterSettingRequest();
             }
         });
-
     }
 
     private void afterSettingRequest() {
@@ -477,9 +512,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private void showDialog() {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View viewRoot = inflater.inflate(R.layout.dialog_setup_time, null);
+        View viewRoot = LayoutInflater.from(this).inflate(R.layout.dialog_setup_time, null);
 
         final EditText etSongInterval = (EditText) viewRoot.findViewById(R.id.edit_songInterval);
         final TextView tvStartTime = (TextView) viewRoot.findViewById(R.id.txt_startTime);
@@ -547,14 +580,16 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         mTimePicker.show();
     }
 
-    public synchronized void buildGoogleApiClient() {
+    public void buildGoogleApiClient() {
         stopLocationUpdate();
         googleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
-                .addApi(Places.GEO_DATA_API)
                 .build();
-
-        if (!googleApiClient.isConnected()) googleApiClient.connect();
+        if (!googleApiClient.isConnected()) {
+            googleApiClient.connect();
+        }
     }
 
     public void stopLocationUpdate() {
@@ -563,23 +598,9 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         }
     }
 
-    public void updateLocation() {
-        if (PermissionUtil.checkLocationPermission(PERMISSIONS_REQUEST_LOCATION, this)) {
-            buildGoogleApiClient();
-            if (!googleApiClient.isConnected()) {
-                googleApiClient.connect();
-            }
-        }
-    }
-
-    public boolean checkGPState() {
-        LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
-    }
-
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        Log.d(TAG, "onConnected: ");
     }
 
     @Override
@@ -603,6 +624,5 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             }
         }
     }
-
 
 }

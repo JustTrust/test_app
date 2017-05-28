@@ -12,6 +12,8 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 /**
  * Created by Ravi on 01/06/15.
  */

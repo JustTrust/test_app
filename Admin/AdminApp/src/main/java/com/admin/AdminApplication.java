@@ -1,31 +1,20 @@
 package com.admin;
 
 import android.app.Application;
-import android.content.Context;
-import android.os.Bundle;
-import android.text.Html;
 import android.widget.Toast;
 
 import com.admin.di.AppComponent;
 import com.admin.di.AppModule;
 import com.admin.di.DaggerAppComponent;
-import com.admin.parsemodel.ConnectionStatus;
-import com.admin.parsemodel.DeviceSettings;
+import com.admin.receiver.MovementReceiver;
 import com.admin.util.Utils;
 import com.google.firebase.FirebaseApp;
-import com.parse.Parse;
-import com.parse.ParseInstallation;
-import com.parse.ParseObject;
-import com.parse.ParseUser;
 
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
-import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -49,6 +38,7 @@ public class AdminApplication extends Application {
                 .build();
         mCheckConnectionStatus = checkConnectionStatus();
         FirebaseApp.initializeApp(this);
+        new MovementReceiver();
     }
 
     private Subscription checkConnectionStatus() {

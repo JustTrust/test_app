@@ -27,6 +27,14 @@ public class NotificationMessage implements Serializable{
         m_realStartTime = null;
     }
 
+    public NotificationMessage(String json){
+        try {
+            parseData(new JSONObject(json));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     public NotificationMessage(boolean isBackground, Time start, Time end, String songInterval, String pauseInterval) {
         makeJSONObject(isBackground, start, end, songInterval, pauseInterval);
     }
