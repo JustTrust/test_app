@@ -9,7 +9,6 @@ import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Environment;
 import android.os.IBinder;
 import android.text.TextUtils;
@@ -20,13 +19,10 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.player.PlayerApplication;
 import com.player.util.DataManager;
 import com.player.util.PermissionUtil;
 
-import java.io.File;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -55,12 +51,19 @@ public class BackgroundVideoRecordingService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         PlayerApplication.getAppComponent().inject(this);
-        if (PermissionUtil.checkCameraPermissions(this)) {
+        if (PermissionUtil.checkAppPermissions(this)) {
             //Dont start recording is already recording.
-            if (!isRecording) initRecorder();
+            if (!isRecording){
+                if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+                    initRecorder();
+                }else{
+                    initRecorderMarshmallow();
+                }
+            }
         }
         return super.onStartCommand(intent, flags, startId);
     }
+
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -144,7 +147,7 @@ public class BackgroundVideoRecordingService extends Service {
         surfaceView = new SurfaceView(this);
 
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
-                130, 200,
+                1, 1,
                 WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT
@@ -195,5 +198,35 @@ public class BackgroundVideoRecordingService extends Service {
 
             }
         });
+    }
+
+    private void initRecorderMarshmallow() {
+        if (!initCamera()) {
+            return;
+        }
+        filepath = null;
+        if (mediaRecorder != null) stopRecorder();
+        camera = Camera.open(idCurrentCamera);
+        camera.unlock();
+        mediaRecorder = new MediaRecorder();
+
+        mediaRecorder.setCamera(camera);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+        mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
+        filepath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+                .getAbsolutePath() + "/" + DateFormat.format("yyyy-MM-dd_HH-mm-ss", new Date().getTime()) +
+                ".mp4";
+        mediaRecorder.setOutputFile(filepath);
+
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+            startTimer();
+        } catch (Exception e) {
+            isRecording = false;
+            e.printStackTrace();
+        }
     }
 }

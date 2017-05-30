@@ -24,11 +24,11 @@ public class PermissionUtil {
 
     public static boolean checkReadPermission(int requestCode, Activity activity) {
         if (ActivityCompat.checkSelfPermission(activity,
-                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, requestCode);
-            return false;
-        } else {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             return true;
+        } else {
+            //activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, requestCode);
+            return false;
         }
     }
 
@@ -44,7 +44,7 @@ public class PermissionUtil {
         return true;
     }
 
-    public static boolean checkCameraPermissions(Context context) {
+    public static boolean checkAppPermissions(Context context) {
         if (ActivityCompat.checkSelfPermission(context,
                 Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context
@@ -58,9 +58,10 @@ public class PermissionUtil {
     }
 
     public static void requestCameraPermissions(Activity activity, int requestCode){
-        if (!checkCameraPermissions(activity)){
+        if (!checkAppPermissions(activity)){
             activity.requestPermissions(new String[]{Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE}, requestCode);
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE}, requestCode);
         }
     }
 

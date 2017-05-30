@@ -67,9 +67,16 @@ public class PlaySongsN {
             m_player.prepare();
             m_player.start();
             mPlayerStatus = STATUS_PLAYING;
+            if (listener != null){
+                listener.updatePlayStatus(STATUS_PLAYING,
+                        m_player.getDuration()>0 ? m_player.getDuration() : 0);
+            }
             return true;
         } catch (IOException e) {
             e.printStackTrace();
+            if (listener != null){
+                listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
+            }
             return false;
         }
     }
@@ -84,32 +91,52 @@ public class PlaySongsN {
             m_player.prepare();
             m_player.start();
             mPlayerStatus = STATUS_PLAYING;
+            if (listener != null){
+                listener.updatePlayStatus(STATUS_PLAYING,
+                        m_player.getDuration()>0 ? m_player.getDuration() : 0);
+            }
             return true;
         } catch (IOException e) {
             e.printStackTrace();
+            if (listener != null){
+                listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
+            }
             return false;
         }
     }
 
     private void pause() {
         mPlayerStatus = STATUS_PAUSE;
+        if (listener != null){
+            listener.updatePlayStatus(STATUS_PAUSE, 0);
+        }
         m_player.pause();
     }
 
     private void stop() {
         mPlayerStatus = STATUS_STOPPED;
+        if (listener != null){
+            listener.updatePlayStatus(STATUS_STOPPED, 0);
+        }
         m_player.pause();
     }
 
     public void resume() {
         mPlayerStatus = STATUS_PLAYING;
         m_player.start();
+        if (listener != null){
+            listener.updatePlayStatus(STATUS_PLAYING,
+                    m_player.getDuration()>0 ? m_player.getDuration() : 0);
+        }
     }
 
     /**
      * @desc : Destroy PlaySong object instance
      */
     public void onDestroy() {
+        if (listener != null){
+            listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
+        }
         mPlayerStatus = STATUS_HARD_STOPPED;
         m_player.stop();
     }

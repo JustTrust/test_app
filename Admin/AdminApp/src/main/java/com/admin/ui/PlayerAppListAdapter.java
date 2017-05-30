@@ -65,21 +65,14 @@ public class PlayerAppListAdapter extends BaseAdapter {
 
         if (Utils.isConnected(mArlst_players.get(position).createdAt)) {
             UserConnectionStatus status = mArlst_players.get(position);
-            int remainTime = status.remain;
+            //int remainTime = status.remain;
 
-            if (remainTime > 0) {
-                if (mArlst_players.get(position).isPlaying) {
-                    holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.playing)));
-                } else {
-                    holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.pause)));
-                }
+            if (mArlst_players.get(position).isPlaying) {
+                holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.playing)));
             } else {
-//                if (mIsDeviceScheduleSetUpMap.containsKey(status)) {
-//                    holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.pause)));
-//                } else {
-//                    holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.connected)));
-//                }
+                holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.pause)));
             }
+
             isSettingsAvailableForDevice = true;
         } else {
             holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.disconnected)));
@@ -99,20 +92,20 @@ public class PlayerAppListAdapter extends BaseAdapter {
         }
 
         holder.toggle_GPS.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (listener != null){
+            if (listener != null) {
                 listener.onGpsStatusChanged(mArlst_players.get(position).deviceID, isChecked);
             }
         });
         return view;
     }
 
+    interface GpsChangedListener {
+        void onGpsStatusChanged(String deviceID, Boolean isChecked);
+    }
+
     class ViewHolder {
         TextView txt_deviceName;
         TextView txt_connStatus;
         ToggleButton toggle_GPS;
-    }
-
-    interface GpsChangedListener{
-        void onGpsStatusChanged(String deviceID, Boolean isChecked);
     }
 }

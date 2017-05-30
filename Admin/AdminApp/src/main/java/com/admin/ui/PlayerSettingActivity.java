@@ -1,5 +1,6 @@
 package com.admin.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
@@ -27,6 +28,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -118,10 +120,12 @@ public class PlayerSettingActivity extends Activity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 deviceSettings = dataSnapshot.getValue(PhoneSettings.class);
-                mTxt_startTimepicker.setText(deviceSettings.startTime);
-                mTxt_endTimepicker.setText(deviceSettings.endTime);
-                mEdit_songInterval.setText(deviceSettings.songInterval);
-                mEdit_pauseInterval.setText(deviceSettings.pauseInterval);
+                if (deviceSettings != null) {
+                    mTxt_startTimepicker.setText(deviceSettings.startTime);
+                    mTxt_endTimepicker.setText(deviceSettings.endTime);
+                    mEdit_songInterval.setText(deviceSettings.songInterval);
+                    mEdit_pauseInterval.setText(deviceSettings.pauseInterval);
+                }
             }
 
             @Override
@@ -187,8 +191,9 @@ public class PlayerSettingActivity extends Activity {
         });
     }
 
+    @SuppressLint("DefaultLocale")
     public void setConnectionStatus() {
-
+        if (mConnectionStatus == null) return;
         long differ = new Date().getTime() - mConnectionStatus.createdAt;
         boolean isPlaying = mConnectionStatus.isPlaying;
         int remainTime = mConnectionStatus.remain;
@@ -201,7 +206,10 @@ public class PlayerSettingActivity extends Activity {
         if (remainTime <= 0) {
             mTxt_remain.setText(" -- ");
         } else {
-            mTxt_remain.setText(remainTime + "");
+            mTxt_remain.setText(String.format("%02d:%02d",
+                    TimeUnit.MILLISECONDS.toMinutes(remainTime),
+                    TimeUnit.MILLISECONDS.toSeconds(remainTime) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remainTime))));
         }
 
         if (differ < AppConstant.CONNECTION_CHECK_TIME) {

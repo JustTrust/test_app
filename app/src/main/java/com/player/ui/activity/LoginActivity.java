@@ -3,7 +3,7 @@ package com.player.ui.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,14 +37,12 @@ public class LoginActivity extends Activity {
     @Inject
     DataManager dataManager;
 
-    private String deviceId;
     private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         PlayerApplication.getAppComponent().inject(this);
-        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         auth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = dataManager.getCurrentUser();
         if (currentUser != null) {
@@ -68,14 +66,18 @@ public class LoginActivity extends Activity {
     }
 
     private void tryToLogin() {
-        auth.signInWithEmailAndPassword(mEdit_deviceName.getText().toString(), AppConstant.USER_PASSWORD)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        goToMainActivity();
-                    } else {
-                        registerNewUser();
-                    }
-                });
+        if (!TextUtils.isEmpty(mEdit_deviceName.getText().toString())) {
+            auth.signInWithEmailAndPassword(mEdit_deviceName.getText().toString(), AppConstant.USER_PASSWORD)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            goToMainActivity();
+                        } else {
+                            registerNewUser();
+                        }
+                    });
+        }else{
+            Toast.makeText(this, R.string.empty_email,Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void registerNewUser() {
@@ -98,7 +100,7 @@ public class LoginActivity extends Activity {
     }
 
     private void storeUserConnection(FirebaseUser user) {
-        UserConnectionStatus userConnectionStatus = new UserConnectionStatus(deviceId, user.getEmail());
+        UserConnectionStatus userConnectionStatus = new UserConnectionStatus(dataManager.getDeviceId(), user.getEmail());
         dataManager.storeUserConnection(userConnectionStatus);
     }
 }

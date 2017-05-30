@@ -10,8 +10,8 @@
     <string name="playing_Song_Name">Song Name : </string>
     <string name="playing">Playing...</string>
     <string name="pause">Pause</string>
-    <string name="device_name">Device name</string>
-    <string name="register_btn_txt">Regeister Device </string>
+    <string name="device_name">Enter Email</string>
+    <string name="register_btn_txt">Register Device </string>
     <string name="warning_login">Please input the device Name</string>
     <string name="show_login_success">Register Success</string>
     <string name="gps_enabled">GPS enabled</string>
@@ -20,6 +20,7 @@
     <string name="setup_time">Setup time</string>
     <string name="logout">Logout</string>
     <string name="empty_field">All fields must be completed</string>
+    <string name="empty_email">Please enter email</string>
     <string name="no_connected_device">No connected devices</string>
     <string name="intervalPause">PAUSE</string>
     <string name="intervalSongs">PLAY</string>

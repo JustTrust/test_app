@@ -1,5 +1,6 @@
 package com.player.ui.activity;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
@@ -11,6 +12,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -71,6 +73,9 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import rx.Observable;
+import rx.Single;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.subscriptions.CompositeSubscription;
 
 import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY;
@@ -119,7 +124,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private MusicListAdapter mAdp_music;
     private PlaySongsN playSongs;
     private MoveDetector mMove_dector;
-    private Cursor mCursor;
     private boolean isPlaying;
     private boolean isLocationSending;
     private int remainTime;
@@ -145,14 +149,22 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         } else {
             getActionBar().setTitle(currentUser.getDisplayName());
         }
-        getMusicsFromStorage();
         initUI();
         initMoveDetector();
 
         TimerWakeLock.acquireCpuWakeLock(this);
-
         am = (AudioManager) getSystemService(AUDIO_SERVICE);
         startTimer();
+        getMusicsFromStorage();
+        checkPermissions();
+    }
+
+    private void checkPermissions() {
+        Single.just(0).delay(3, TimeUnit.SECONDS)
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(integer ->
+                        PermissionUtil.requestCameraPermissions(PlayerActivity.this, PERMISSIONS_REQUEST_CAMERA));
     }
 
     @Override
@@ -161,11 +173,12 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         setSendingConnSetting();
         EventBus.getDefault().register(this);
         buildGoogleApiClient();
-        PermissionUtil.requestCameraPermissions(this, PERMISSIONS_REQUEST_CAMERA);
     }
 
     private void startTimer() {
-        compositeSubscription.add(Observable.interval(1, TimeUnit.SECONDS)
+        compositeSubscription.add(Observable.interval(4,3, TimeUnit.SECONDS)
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(aLong -> {
                     if (playSongs != null) {
                         playSongs.checkPlayStatus();
@@ -224,7 +237,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     private void setSendingConnSetting() {
         Log.d(LOG_TAG, "setSendingConnSetting: isPlaying " + isPlaying);
-
         if (progress) return;
         progress = true;
 
@@ -234,7 +246,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 UserConnectionStatus status = dataSnapshot.getValue(UserConnectionStatus.class);
-                updateConnectionStatus(status);
+                if (status != null) updateConnectionStatus(status);
                 progress = false;
             }
 
@@ -243,7 +255,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                 progress = false;
             }
         });
-
     }
 
     private void updateConnectionStatus(UserConnectionStatus status) {
@@ -275,7 +286,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         if (!PermissionUtil.checkReadPermission(PERMISSIONS_REQUEST_READ, this)) return;
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
-        mCursor = getContentResolver().query(
+        Cursor mCursor = getContentResolver().query(
                 uri,
                 new String[]{MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.DATA},
                 MediaStore.Audio.Media.IS_MUSIC + " != 0"
@@ -285,7 +296,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                 "LOWER(" + MediaStore.Audio.Media.TITLE + ") ASC");
 
         mlst_Musics.clear();
-        if (mCursor.moveToFirst()) {
+        if (mCursor != null && mCursor.moveToFirst()) {
             do {
                 MusicInfo musicInfo = new MusicInfo();
                 musicInfo.mStr_musicName = mCursor.getString(0); //getName of song from external resource
@@ -294,7 +305,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
                 mlst_Musics.add(musicInfo);
             } while (mCursor.moveToNext());
         }
-        mCursor.close();
+        if (mCursor != null) mCursor.close();
+        mAdp_music.notifyDataSetChanged();
     }
 
     private void initUI() {
@@ -306,9 +318,11 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mDeviceSettings = dataSnapshot.getValue(PhoneSettings.class);
-                NotificationMessage message = new NotificationMessage(false, new Time(mDeviceSettings.startTime),
-                        new Time(mDeviceSettings.endTime), mDeviceSettings.songInterval, mDeviceSettings.pauseInterval);
-                notificationUtils.showNotificationMessage(message.getJsonObject());
+                if (mDeviceSettings != null) {
+                    NotificationMessage message = new NotificationMessage(false, new Time(mDeviceSettings.startTime),
+                            new Time(mDeviceSettings.endTime), mDeviceSettings.songInterval, mDeviceSettings.pauseInterval);
+                    notificationUtils.showNotificationMessage(message.getJsonObject());
+                }
             }
 
             @Override
@@ -328,11 +342,16 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         }
     }
 
+    @SuppressLint("DefaultLocale")
     public void setRemainTime(int remainTime) {
         if (remainTime == -1) {
             mTxt_remainTime.setText("--");
         } else {
-            mTxt_remainTime.setText(remainTime + "");
+            mTxt_remainTime.setText(String.format("%02d:%02d",
+                    TimeUnit.MILLISECONDS.toMinutes(remainTime),
+                    TimeUnit.MILLISECONDS.toSeconds(remainTime) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remainTime))
+            ));
         }
         this.remainTime = remainTime;
     }
@@ -492,6 +511,10 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mDeviceSettings = dataSnapshot.getValue(PhoneSettings.class);
+                if (mDeviceSettings == null){
+                    mDeviceSettings = new PhoneSettings();
+                    mDeviceSettings.deviceId = dataManager.getDeviceId();
+                }
                 afterSettingRequest();
             }
 
@@ -570,12 +593,9 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
         int minute = mcurrentTime.get(Calendar.MINUTE);
         TimePickerDialog mTimePicker;
-        mTimePicker = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
-            @Override
-            public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
-                txt_time.setText(selectedHour + ":" + selectedMinute);
-            }
-        }, hour, minute, true);
+        mTimePicker = new TimePickerDialog(this,
+                (timePicker, selectedHour, selectedMinute) ->
+                        txt_time.setText(selectedHour + ":" + selectedMinute), hour, minute, true);
         mTimePicker.setTitle("Select Time");
         mTimePicker.show();
     }
@@ -619,7 +639,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
         if (PermissionUtil.verifyPermissions(grantResults)) {
             if (requestCode == PERMISSIONS_REQUEST_LOCATION) {
                 buildGoogleApiClient();
-            } else if (requestCode == PERMISSIONS_REQUEST_READ) {
+            } else if (requestCode == PERMISSIONS_REQUEST_READ ||
+                    requestCode == PERMISSIONS_REQUEST_CAMERA) {
                 getMusicsFromStorage();
             }
         }

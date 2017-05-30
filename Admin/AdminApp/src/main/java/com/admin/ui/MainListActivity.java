@@ -56,8 +56,6 @@ public class MainListActivity extends FragmentActivity {
 
     private static final String LOG_TAG = MainListActivity.class.getName();
 
-    private static ArrayList<String> mAry_listMessages = new ArrayList<>();
-
     @BindView(R.id.imgLeft)
     ImageView imgLeft;
     @BindView(R.id.txtRight)

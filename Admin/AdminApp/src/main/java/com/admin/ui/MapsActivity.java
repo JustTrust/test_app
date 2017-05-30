@@ -101,22 +101,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         mIsDeviceScheduleSetUpMap.clear();
-                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                            UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
-                            FirebaseDatabase.getInstance().getReference()
-                                    .child(AppConstant.NODE_SETTING).child(status.deviceID)
-                                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                                        @Override
-                                        public void onDataChange(DataSnapshot dataSnapshot) {
-                                            mIsDeviceScheduleSetUpMap.put(status, dataSnapshot.getValue(PhoneSettings.class));
-                                            addMarkersToMap();
-                                        }
+                        if (dataSnapshot.getChildrenCount() > 0) {
+                            for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                                UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
+                                FirebaseDatabase.getInstance().getReference()
+                                        .child(AppConstant.NODE_SETTING).child(status.deviceID)
+                                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                                PhoneSettings setting = dataSnapshot.getValue(PhoneSettings.class);
+                                                if (setting != null) {
+                                                    mIsDeviceScheduleSetUpMap.put(status, setting);
+                                                    addMarkersToMap();
+                                                }
+                                            }
 
-                                        @Override
-                                        public void onCancelled(DatabaseError databaseError) {
+                                            @Override
+                                            public void onCancelled(DatabaseError databaseError) {
 
-                                        }
-                                    });
+                                            }
+                                        });
+                            }
                         }
                     }
 
