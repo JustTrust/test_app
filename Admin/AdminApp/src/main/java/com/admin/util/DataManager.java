@@ -6,11 +6,7 @@ import com.admin.AppConstant;
 import com.admin.model.Message;
 import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
-import com.admin.model.UserConnectionStatus;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 public class DataManager {
     private Context context;
@@ -41,5 +37,11 @@ public class DataManager {
                 .child(AppConstant.NODE_DEVICES).child(deviceID)
                 .child("gpsEnabled")
                 .setValue(isChecked);
+    }
+
+    public void clearMessages() {
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_ADMIN_MESSAGES)
+                .removeValue();
     }
 }

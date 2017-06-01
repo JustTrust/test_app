@@ -1,27 +1,19 @@
 package com.player.util;
 
 import android.app.ActivityManager;
-import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.widget.Toast;
 
 import com.player.AppConstant;
-import com.player.PlayerApplication;
-
-import org.json.JSONObject;
-
 import com.player.R;
 import com.player.model.NotificationMessage;
 import com.player.ui.activity.PlayerActivity;
 
-import java.io.Serializable;
-import java.util.List;
+import org.json.JSONObject;
 
-import javax.inject.Inject;
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
 
 /**
  * Created by Ravi on 01/06/15.
@@ -36,11 +28,17 @@ public class NotificationUtils {
         this.mContext = mContext;
     }
 
+    private boolean isAppOpened() {
+        ActivityManager.RunningAppProcessInfo appProcessInfo = new ActivityManager.RunningAppProcessInfo();
+        ActivityManager.getMyMemoryState(appProcessInfo);
+        return (appProcessInfo.importance == IMPORTANCE_FOREGROUND || appProcessInfo.importance == IMPORTANCE_VISIBLE);
+    }
+
     public void showNotificationMessage(String msg) {
         int icon = R.mipmap.ic_launcher;
         NotificationMessage playerInfo = new NotificationMessage();
         try {
-            if (isAppIsInBackground(mContext)) {
+            if (!isAppOpened()) {
                 /*int mNotificationId = 100;
 
                 PendingIntent resultPendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
@@ -65,7 +63,7 @@ public class NotificationUtils {
                 newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, msg);
                 newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 mContext.startActivity(newIntent);
-                Toast.makeText(mContext,"UpdateInfo", Toast.LENGTH_LONG).show();
+                Toast.makeText(mContext, "UpdateInfo", Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,23 +74,23 @@ public class NotificationUtils {
         Intent newIntent = new Intent(mContext, PlayerActivity.class);
         newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
-            if (!isAppIsInBackground(mContext)) {
+            if (isAppOpened()) {
                 boolean isGPSSetting = data.getBoolean(AppConstant.NOTIFY_IS_BACKGROUND);
-                if(!isGPSSetting) {
+                if (!isGPSSetting) {
                     NotificationMessage playerInfo = new NotificationMessage();
                     playerInfo.parseData(data);
                     newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
                     newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, playerInfo);
                     mContext.startActivity(newIntent);
                     Toast.makeText(mContext, "UpdateInfo", Toast.LENGTH_LONG).show();
-                }else{
+                } else {
                     boolean isGpsEnabled = data.getBoolean(AppConstant.FIELD_GPS);
                     newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_GPS);
                     newIntent.putExtra(AppConstant.FIELD_GPS, isGpsEnabled);
                     mContext.startActivity(newIntent);
-                    if(isGpsEnabled){
+                    if (isGpsEnabled) {
                         Toast.makeText(mContext, mContext.getString(R.string.gps_enabled), Toast.LENGTH_LONG).show();
-                    }else{
+                    } else {
                         Toast.makeText(mContext, mContext.getString(R.string.gps_disabled), Toast.LENGTH_LONG).show();
                     }
                 }
@@ -100,28 +98,5 @@ public class NotificationUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-    public static boolean isAppIsInBackground(Context context) {
-        boolean isInBackground = true;
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
-            List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
-            for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-                if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                    for (String activeProcess : processInfo.pkgList) {
-                        if (activeProcess.equals(context.getPackageName())) {
-                            isInBackground = false;
-                        }
-                    }
-                }
-            }
-        } else {
-            List<ActivityManager.RunningTaskInfo> taskInfo = am.getRunningTasks(1);
-            ComponentName componentInfo = taskInfo.get(0).topActivity;
-            if (componentInfo.getPackageName().equals(context.getPackageName())) {
-                isInBackground = false;
-            }
-        }
-        return isInBackground;
     }
 }

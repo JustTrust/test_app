@@ -30,6 +30,7 @@ public class AppConstant{
     public final static String NODE_SETTING="settings";
     public final static String NODE_MESSAGES="messages";
     public final static String NODE_ADMIN_MESSAGES="admin_messages";
+    public final static String NODE_VIDEO = "video";
 
     public final static String ADMIN_EMAIL="admin@messages.com";
     public final static String ADMIN_PASS="admin_messages";

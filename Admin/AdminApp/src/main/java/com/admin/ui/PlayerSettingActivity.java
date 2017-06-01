@@ -3,6 +3,7 @@ package com.admin.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.TextUtils;
@@ -56,6 +57,8 @@ public class PlayerSettingActivity extends Activity {
     TextView mTxt_endTimepicker;
     @BindView(R.id.btn_update)
     Button mBtn_update;
+    @BindView(R.id.video)
+    Button mBtn_video;
     @BindView(R.id.txt_connectStatus)
     TextView mTxt_connectStatus;
     @BindView(R.id.txt_songNum)
@@ -85,7 +88,7 @@ public class PlayerSettingActivity extends Activity {
 
     private void initUI() {
         isInitUI = true;
-
+        mStr_DeviceID = getIntent().getStringExtra(AppConstant.FIELD_DEVICE_ID);
         mTxt_startTimepicker.setOnClickListener(v -> getTime(mTxt_startTimepicker));
         mTxt_endTimepicker.setOnClickListener(v -> getTime(mTxt_endTimepicker));
         mBtn_update.setOnClickListener(v -> {
@@ -100,7 +103,7 @@ public class PlayerSettingActivity extends Activity {
             else
                 Toast.makeText(PlayerSettingActivity.this, "Reached Maximum Limit", Toast.LENGTH_SHORT).show();
             txtVolume.setText(String.valueOf(volume_level));
-            dataManager.sendVolumePushNotification( volume_level, mStr_DeviceID);
+            dataManager.sendVolumePushNotification(volume_level, mStr_DeviceID);
         });
 
         btnVolumeDown.setOnClickListener(v -> {
@@ -108,13 +111,17 @@ public class PlayerSettingActivity extends Activity {
                 volume_level = Integer.valueOf(txtVolume.getText().toString()) - 1;
 
             txtVolume.setText(String.valueOf(volume_level));
-            dataManager.sendVolumePushNotification( volume_level, mStr_DeviceID);
+            dataManager.sendVolumePushNotification(volume_level, mStr_DeviceID);
         });
+
+        mBtn_video.setOnClickListener(v -> startActivity(
+                new Intent(PlayerSettingActivity.this, VideoActivity.class)
+                        .putExtra(AppConstant.FIELD_DEVICE_ID, mStr_DeviceID)));
 
         mTimer = new Timer();
         mDurationTask = new CheckStatusTask();
         mTimer.schedule(mDurationTask, 0, 3000);
-        mStr_DeviceID = getIntent().getStringExtra(AppConstant.FIELD_DEVICE_ID);
+
         FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_SETTING)
                 .child(mStr_DeviceID).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -141,12 +148,7 @@ public class PlayerSettingActivity extends Activity {
         int minute = mcurrentTime.get(Calendar.MINUTE);
         TimePickerDialog mTimePicker;
         mTimePicker = new TimePickerDialog(this, (timePicker, selectedHour, selectedMinute) -> {
-            String str = Integer.toString(selectedMinute);
-            if (str.equals("0")) {
-                txt_time.setText(selectedHour + ":" + "00");
-            } else {
-                txt_time.setText(selectedHour + ":" + selectedMinute);
-            }
+                txt_time.setText(String.format("%02d:%02d", selectedHour , selectedMinute));
         }, hour, minute, true);
         mTimePicker.setTitle("Select Time");
         mTimePicker.show();
@@ -162,9 +164,9 @@ public class PlayerSettingActivity extends Activity {
         }
         deviceSettings.endTime = str_endTime;
         deviceSettings.songInterval = str_songInterval;
-        deviceSettings.pauseInterval  = str_pauseInterval;
+        deviceSettings.pauseInterval = str_pauseInterval;
         deviceSettings.startTime = str_startTime;
-        deviceSettings.deviceId  = mStr_DeviceID;
+        deviceSettings.deviceId = mStr_DeviceID;
         dataManager.saveSettings(deviceSettings);
 
         Time startTime = new Time();

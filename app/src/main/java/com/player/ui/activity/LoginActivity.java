@@ -67,7 +67,8 @@ public class LoginActivity extends Activity {
 
     private void tryToLogin() {
         if (!TextUtils.isEmpty(mEdit_deviceName.getText().toString())) {
-            auth.signInWithEmailAndPassword(mEdit_deviceName.getText().toString(), AppConstant.USER_PASSWORD)
+            auth.signInWithEmailAndPassword(mEdit_deviceName.getText().toString() + AppConstant.USER_EMAIL,
+                    AppConstant.USER_PASSWORD)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             goToMainActivity();
@@ -84,7 +85,8 @@ public class LoginActivity extends Activity {
         if (mEdit_deviceName.getText().toString().isEmpty()) {
             Toast.makeText(this, getString(R.string.warning_login), Toast.LENGTH_SHORT).show();
         } else {
-            auth.createUserWithEmailAndPassword(mEdit_deviceName.getText().toString(), AppConstant.USER_PASSWORD)
+            auth.createUserWithEmailAndPassword(mEdit_deviceName.getText().toString()+ AppConstant.USER_EMAIL,
+                    AppConstant.USER_PASSWORD)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             FirebaseUser user = auth.getCurrentUser();
@@ -100,8 +102,10 @@ public class LoginActivity extends Activity {
     }
 
     private void storeUserConnection(FirebaseUser user) {
-        UserConnectionStatus userConnectionStatus = new UserConnectionStatus(dataManager.getDeviceId(), user.getEmail());
+        UserConnectionStatus userConnectionStatus = new UserConnectionStatus(dataManager.getDeviceId(),
+                user.getEmail().replace(AppConstant.USER_EMAIL, ""));
         dataManager.storeUserConnection(userConnectionStatus);
     }
+
 }
 

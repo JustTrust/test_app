@@ -101,7 +101,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         mIsDeviceScheduleSetUpMap.clear();
-                        if (dataSnapshot.getChildrenCount() > 0) {
+                        if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
                             for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                                 UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
                                 FirebaseDatabase.getInstance().getReference()

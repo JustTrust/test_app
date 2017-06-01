@@ -36,6 +36,7 @@ dependencies {
     compile "com.google.firebase:firebase-auth:$PLAY_SERVICE_VERSION"
     compile "com.google.firebase:firebase-storage:$PLAY_SERVICE_VERSION"
     compile 'com.android.support:appcompat-v7:25.2.0'
+    compile 'com.android.support:recyclerview-v7:25.2.0'
     compile 'com.android.support:support-v4:25.2.0'
     compile 'com.google.maps.android:android-maps-utils:0.4.4'
     compile 'io.reactivex:rxandroid:1.2.1'

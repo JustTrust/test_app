@@ -28,6 +28,9 @@
             android:name=".ui.PlayerSettingActivity"
             android:screenOrientation="portrait"/>
         <activity
+            android:name=".ui.VideoActivity"
+            android:screenOrientation="portrait"/>
+        <activity
             android:name=".ui.MainListActivity"
             android:launchMode="singleTask"
             android:screenOrientation="portrait">

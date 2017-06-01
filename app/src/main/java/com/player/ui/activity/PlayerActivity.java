@@ -12,7 +12,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -23,9 +22,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
-
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -75,7 +72,6 @@ import butterknife.ButterKnife;
 import rx.Observable;
 import rx.Single;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
 import rx.subscriptions.CompositeSubscription;
 
 import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY;
@@ -125,7 +121,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private PlaySongsN playSongs;
     private MoveDetector mMove_dector;
     private boolean isPlaying;
-    private boolean isLocationSending;
     private int remainTime;
     private ProgressDialog mPrgDlg;
     private PhoneSettings mDeviceSettings;
@@ -135,6 +130,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     private LocationRequest locationReuest = LocationRequest.create()
             .setInterval(1600)
             .setMaxWaitTime(12000)
+            .setNumUpdates(1)
             .setPriority(PRIORITY_HIGH_ACCURACY);
 
     @Override
@@ -176,7 +172,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void startTimer() {
-        compositeSubscription.add(Observable.interval(4,3, TimeUnit.SECONDS)
+        compositeSubscription.add(Observable.interval(4, 3, TimeUnit.SECONDS)
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(aLong -> {
@@ -212,9 +208,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void getAndSendLocation() {
-        if (!isLocationSending && PermissionUtil.checkLocationPermission(PERMISSIONS_REQUEST_LOCATION, this)) {
+        if (PermissionUtil.checkLocationPermission(PERMISSIONS_REQUEST_LOCATION, this)) {
             if (googleApiClient.isConnected()) {
-                isLocationSending = true;
                 LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationReuest, this);
             }
         }
@@ -232,8 +227,8 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             this.startService(new Intent(this, BackgroundVideoRecordingService.class));
             LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
         }
-        isLocationSending = false;
     }
+
 
     private void setSendingConnSetting() {
         Log.d(LOG_TAG, "setSendingConnSetting: isPlaying " + isPlaying);
@@ -494,12 +489,6 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             loadSettingsAndShowDialog();
             return true;
         }
-        if (id == R.id.action_logout) {
-            playSongs.onDestroy();
-            dataManager.logout();
-            finish();
-            return true;
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -511,7 +500,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mDeviceSettings = dataSnapshot.getValue(PhoneSettings.class);
-                if (mDeviceSettings == null){
+                if (mDeviceSettings == null) {
                     mDeviceSettings = new PhoneSettings();
                     mDeviceSettings.deviceId = dataManager.getDeviceId();
                 }
@@ -589,13 +578,14 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
     }
 
     private void getTime(final TextView txt_time) {
-        Calendar mcurrentTime = Calendar.getInstance();
-        int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
-        int minute = mcurrentTime.get(Calendar.MINUTE);
+        Calendar currentTime = Calendar.getInstance();
+        int hour = currentTime.get(Calendar.HOUR_OF_DAY);
+        int minute = currentTime.get(Calendar.MINUTE);
         TimePickerDialog mTimePicker;
         mTimePicker = new TimePickerDialog(this,
                 (timePicker, selectedHour, selectedMinute) ->
-                        txt_time.setText(selectedHour + ":" + selectedMinute), hour, minute, true);
+                        txt_time.setText(String.format("%02d:%02d", selectedHour, selectedMinute)),
+                hour, minute, true);
         mTimePicker.setTitle("Select Time");
         mTimePicker.show();
     }
@@ -614,6 +604,7 @@ public class PlayerActivity extends Activity implements GoogleApiClient.Connecti
 
     public void stopLocationUpdate() {
         if (googleApiClient != null && googleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
             googleApiClient.disconnect();
         }
     }

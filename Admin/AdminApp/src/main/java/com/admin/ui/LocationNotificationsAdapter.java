@@ -1,50 +1,33 @@
 package com.admin.ui;
 
 import android.content.Context;
-import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+
 import com.admin.R;
+import com.admin.model.Message;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LocationNotificationsAdapter extends BaseAdapter {
 
-    public static final int INVALID_COLLECTION_POSITION = -1;
-
     private Context mContext;
-    private List<Pair<String, String>> mDeviceLocations = new ArrayList<>();
+    private List<String> mDeviceLocations = new ArrayList<>();
 
     public LocationNotificationsAdapter(Context context) {
         mContext = context;
     }
 
-    public void addLocation(Pair<String, String> deviceLocation) {
-        int presentedLocationPosition = getPresentedLocationPosition(deviceLocation);
-        if (presentedLocationPosition == INVALID_COLLECTION_POSITION) {
-            mDeviceLocations.add(deviceLocation);
-        } else {
-            mDeviceLocations.remove(presentedLocationPosition);
-            mDeviceLocations.add(presentedLocationPosition, deviceLocation);
-        }
+    public void addLocation(Message msg) {
+        mDeviceLocations.add(
+                msg.deviceName + " moved GPS:" + msg.latitude + " " + msg.longitude + " at " + msg.time);
     }
 
     public void clear() {
         mDeviceLocations.clear();
-    }
-
-    private int getPresentedLocationPosition(Pair<String, String> deviceLocation) {
-        int position = INVALID_COLLECTION_POSITION;
-        for (int i = 0; i < mDeviceLocations.size(); i++) {
-            Pair<String, String> location = mDeviceLocations.get(i);
-            if (location.first != null && location.first.equals(deviceLocation.first)) {
-                position = i;
-            }
-        }
-        return position;
     }
 
     @Override
@@ -53,7 +36,7 @@ public class LocationNotificationsAdapter extends BaseAdapter {
     }
 
     @Override
-    public Pair<String, String> getItem(int position) {
+    public String getItem(int position) {
         return mDeviceLocations.get(position);
     }
 
@@ -72,7 +55,7 @@ public class LocationNotificationsAdapter extends BaseAdapter {
         } else {
             holder = (LocationNotificationViewHolder) convertView.getTag();
         }
-        holder.getMessageTextView().setText(mDeviceLocations.get(position).second);
+        holder.getMessageTextView().setText(mDeviceLocations.get(position));
         return convertView;
     }
 

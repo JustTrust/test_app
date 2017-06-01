@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.google.firebase.FirebaseApp;
 
+import com.google.firebase.database.FirebaseDatabase;
 import com.player.di.AppComponent;
 import com.player.di.AppModule;
 import com.player.di.DaggerAppComponent;
@@ -25,6 +26,7 @@ public class PlayerApplication extends Application {
                 .appModule(new AppModule(this))
                 .build();
         FirebaseApp.initializeApp(this);
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
         new PlayerInfoChangeReceiver();
     }
 }

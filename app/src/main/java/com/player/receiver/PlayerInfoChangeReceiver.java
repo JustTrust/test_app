@@ -9,7 +9,6 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
@@ -17,11 +16,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.player.AppConstant;
 import com.player.PlayerApplication;
 import com.player.model.Message;
-import com.player.model.NotificationMessage;
 import com.player.util.NotificationUtils;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import javax.inject.Inject;
 

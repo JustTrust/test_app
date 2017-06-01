@@ -1,8 +1,8 @@
 package com.admin.receiver;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.admin.AppConstant;
@@ -12,12 +12,13 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
 
 
 /**
- * @desc Broadcast reciver for movement Detector
+ * @desc Receiver for movement Detector
  */
 public class MovementReceiver {
 
@@ -26,26 +27,30 @@ public class MovementReceiver {
 
     public MovementReceiver(Context context) {
         this.context = context;
-        init();
+        clearMessages();
+    }
+
+    private void clearMessages() {
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_ADMIN_MESSAGES)
+                .removeValue((databaseError, databaseReference) -> init());
     }
 
     private void init() {
+        Log.d(TAG, "init: ");
         FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_ADMIN_MESSAGES)
                 .addChildEventListener(new ChildEventListener() {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                         Log.d(TAG, "onChildAdded: ");
-                        final Message message = dataSnapshot.getValue(Message.class);
-                        proceedMessage(message);
-                        FirebaseDatabase.getInstance().getReference()
-                                .child(AppConstant.NODE_ADMIN_MESSAGES)
-                                .child(message.deviceId).removeValue();
+                        proceedMessage(dataSnapshot.getValue(Message.class));
                     }
 
                     @Override
                     public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
+                        Log.d(TAG, "onChildChanged: ");
+                        proceedMessage(dataSnapshot.getValue(Message.class));
                     }
 
                     @Override
@@ -66,19 +71,17 @@ public class MovementReceiver {
     }
 
     private void proceedMessage(Message message) {
-        if (!TextUtils.isEmpty(message.videoLink)) {
-            StorageReference storageRef = FirebaseStorage.getInstance()
-                    .getReference().child(message.videoLink);
-            storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-
-                context.startActivity(new Intent(context, NotificationDialog.class)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        .putExtra(AppConstant.EXTRA_DEVICE_NAME, message.deviceId)
-                        .putExtra(AppConstant.FIELD_MESSAGE_DATA, uri));
-            }).addOnFailureListener(exception -> {
-                Log.d(TAG, "proceedMessage: "+ exception.getMessage());
-            });
+        if (!isAppOpened()) return;
+        if (message != null) {
+            context.startActivity(new Intent(context, NotificationDialog.class)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         }
+    }
+
+    private boolean isAppOpened() {
+        ActivityManager.RunningAppProcessInfo appProcessInfo = new ActivityManager.RunningAppProcessInfo();
+        ActivityManager.getMyMemoryState(appProcessInfo);
+        return (appProcessInfo.importance == IMPORTANCE_FOREGROUND || appProcessInfo.importance == IMPORTANCE_VISIBLE);
     }
 
 }

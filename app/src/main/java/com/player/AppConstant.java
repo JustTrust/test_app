@@ -15,8 +15,10 @@ public class AppConstant {
     public final static String NODE_DEVICES = "connected_devices";
     public final static String NODE_SETTING = "settings";
     public final static String NODE_MESSAGES = "messages";
+    public final static String NODE_VIDEO = "video";
     public final static String NODE_ADMIN_MESSAGES = "admin_messages";
     public static String USER_PASSWORD = "PASSWORD";
+    public static String USER_EMAIL = "@was.com";
     public static String FIELD_PLAY_INFO = "playInfo";
     public static String FIELD_INTERVAL_SONGS = "intervalOfSongs";
     public static String FIELD_INTERVAL_PAUSE = "intervalOfPause";

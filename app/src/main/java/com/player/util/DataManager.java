@@ -4,11 +4,9 @@ package com.player.util;
 import android.content.Context;
 import android.net.Uri;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -68,9 +66,20 @@ public class DataManager {
 
         Message msg = new Message(latitude, longitude, hours + ":" + min);
         msg.deviceId = deviceId;
-        DatabaseReference admMsg = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId);
-        admMsg.setValue(msg);
+        msg.deviceName = getDeviceName();
+        msg.timeStamp = cal.getTimeInMillis();
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId)
+                .setValue(msg);
+    }
+
+    private String getDeviceName() {
+        FirebaseUser user = getCurrentUser();
+        if (user != null) {
+            return user.getEmail().replace(AppConstant.USER_EMAIL, "");
+        } else {
+            return "";
+        }
     }
 
     public void storeUserConnection(UserConnectionStatus userConnectionStatus) {
@@ -99,19 +108,18 @@ public class DataManager {
     }
 
     public void storeFileInStorage(String filepath) {
+        if (TextUtils.isEmpty(filepath)) return;
         File file = new File(filepath);
         Uri path = Uri.fromFile(file);
         StorageReference fileRef = FirebaseStorage.getInstance()
                 .getReference().child(deviceId).child(file.getName());
         fileRef.putFile(path).addOnCompleteListener(task -> {
-            Message msg = new Message();
-            msg.deviceId = deviceId;
-            msg.videoLink = deviceId + "/" + file.getName();
-            DatabaseReference admMsg = FirebaseDatabase.getInstance().getReference()
-                    .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId);
-            admMsg.setValue(msg);
+            Log.d(TAG, "storeFileInStorage: file was send " + filepath);
+            FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_VIDEO)
+                    .child(getDeviceId()).push().setValue(file.getName());
         }).addOnFailureListener(e -> {
-            Log.d(TAG, "storeFileInStorage: file wasnt send "+filepath );
+            Log.d(TAG, "storeFileInStorage: file wasnt send " + filepath);
         });
     }
+
 }

@@ -9,6 +9,7 @@ import com.admin.di.DaggerAppComponent;
 import com.admin.receiver.MovementReceiver;
 import com.admin.util.Utils;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,7 @@ public class AdminApplication extends Application {
                 .build();
         mCheckConnectionStatus = checkConnectionStatus();
         FirebaseApp.initializeApp(this);
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
         new MovementReceiver(this);
     }
 

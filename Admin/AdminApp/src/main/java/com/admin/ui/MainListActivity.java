@@ -3,7 +3,6 @@ package com.admin.ui;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -53,8 +52,6 @@ import butterknife.OnClick;
  * @desc MainListActivity for list of register player device
  */
 public class MainListActivity extends FragmentActivity {
-
-    private static final String LOG_TAG = MainListActivity.class.getName();
 
     @BindView(R.id.imgLeft)
     ImageView imgLeft;
@@ -215,91 +212,84 @@ public class MainListActivity extends FragmentActivity {
         //do something with your view
 
         builder.setView(viewRoot);
-        builder.setPositiveButton("set", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+        builder.setPositiveButton("set", (dialog, which) -> {
 
-                final String str_startTime = tvStartTime.getText().toString();
-                final String str_endTime = tvEndTime.getText().toString();
-                final String str_songInterval = etSongInterval.getText().toString();
+            final String str_startTime = tvStartTime.getText().toString();
+            final String str_endTime = tvEndTime.getText().toString();
+            final String str_songInterval = etSongInterval.getText().toString();
 
-                if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty()) {
-                    Toast.makeText(MainListActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
+            if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty()) {
+                Toast.makeText(MainListActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
+            } else {
+
+                List<UserConnectionStatus> connectedDevices = new ArrayList<>();
+                for (UserConnectionStatus connectionStatus : mArlst_players) {
+                    if (Utils.isConnected(connectionStatus.createdAt)) {
+                        connectedDevices.add(connectionStatus);
+                    }
+                }
+
+                if (connectedDevices.isEmpty()) {
+                    Toast.makeText(MainListActivity.this, R.string.no_connected_device, Toast.LENGTH_LONG).show();
                 } else {
+                    int songInterval = Integer.valueOf(str_songInterval);
+                    int pauseInterval = Integer.valueOf(str_songInterval) * (connectedDevices.size() - 1);
+                    final String str_pauseInterval = String.valueOf(pauseInterval);
 
-                    List<UserConnectionStatus> connectedDevices = new ArrayList<>();
-                    for (UserConnectionStatus connectionStatus : mArlst_players) {
-                        if (Utils.isConnected(connectionStatus.createdAt)) {
-                            connectedDevices.add(connectionStatus);
-                        }
+                    Calendar calendar = Calendar.getInstance();
+
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
+                    try {
+                        Date date = dateFormat.parse(str_startTime);
+                        calendar.setTime(date);
+                    } catch (java.text.ParseException e) {
+                        e.printStackTrace();
                     }
 
-                    if (connectedDevices.isEmpty()) {
-                        Toast.makeText(MainListActivity.this, R.string.no_connected_device, Toast.LENGTH_LONG).show();
-                    } else {
-                        int songInterval = Integer.valueOf(str_songInterval);
-                        int pauseInterval = Integer.valueOf(str_songInterval) * (connectedDevices.size() - 1);
-                        final String str_pauseInterval = String.valueOf(pauseInterval);
+                    Calendar currentTime = Calendar.getInstance();
+                    int currentHour = currentTime.get(Calendar.HOUR_OF_DAY);
+                    int currentMin = currentTime.get(Calendar.MINUTE);
+                    Time realStartTime = null;
+                    boolean beforeCurrentTime = false;
 
-                        Calendar calendar = Calendar.getInstance();
+                    if (currentHour > calendar.get(Calendar.HOUR_OF_DAY) || (currentHour == calendar.get(Calendar.HOUR_OF_DAY) && currentMin >= calendar.get(Calendar.MINUTE))) {
+                        beforeCurrentTime = true;
+                    }
 
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
-                        try {
-                            Date date = dateFormat.parse(str_startTime);
-                            calendar.setTime(date);
-                        } catch (java.text.ParseException e) {
-                            e.printStackTrace();
+                    for (UserConnectionStatus device : connectedDevices) {
+                        final String mStr_DeviceID = device.deviceID;
+                        final int hour = calendar.get(Calendar.HOUR_OF_DAY);
+                        final int minute = calendar.get(Calendar.MINUTE);
+                        final Time startTime = new Time(hour, minute);
+
+                        Time endTime = new Time(str_endTime);
+
+                        PhoneSettings deviceSettings = new PhoneSettings();
+                        deviceSettings.endTime = str_endTime;
+                        deviceSettings.songInterval = str_songInterval;
+                        deviceSettings.pauseInterval = str_pauseInterval;
+                        deviceSettings.startTime = startTime.convertString();
+                        deviceSettings.deviceId = mStr_DeviceID;
+                        dataManager.saveSettings(deviceSettings);
+
+                        currentHour = currentTime.get(Calendar.HOUR_OF_DAY);
+                        currentMin = currentTime.get(Calendar.MINUTE);
+
+                        if (beforeCurrentTime) {
+                            realStartTime = new Time(currentHour, currentMin);
                         }
 
-                        Calendar currentTime = Calendar.getInstance();
-                        int currentHour = currentTime.get(Calendar.HOUR_OF_DAY);
-                        int currentMin = currentTime.get(Calendar.MINUTE);
-                        Time realStartTime = null;
-                        boolean beforeCurrentTime = false;
+                        NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval, realStartTime);
+                        dataManager.sendPushNotification(message, mStr_DeviceID);
 
-                        if (currentHour > calendar.get(Calendar.HOUR_OF_DAY) || (currentHour == calendar.get(Calendar.HOUR_OF_DAY) && currentMin >= calendar.get(Calendar.MINUTE))) {
-                            beforeCurrentTime = true;
-                        }
-
-                        for (UserConnectionStatus device : connectedDevices) {
-                            final String mStr_DeviceID = device.deviceID;
-                            final int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                            final int minute = calendar.get(Calendar.MINUTE);
-                            final Time startTime = new Time(hour, minute);
-
-                            Time endTime = new Time(str_endTime);
-
-                            PhoneSettings deviceSettings = new PhoneSettings();
-                            deviceSettings.endTime = str_endTime;
-                            deviceSettings.songInterval = str_songInterval;
-                            deviceSettings.pauseInterval = str_pauseInterval;
-                            deviceSettings.startTime = startTime.convertString();
-                            deviceSettings.deviceId = mStr_DeviceID;
-                            dataManager.saveSettings(deviceSettings);
-
-                            currentHour = currentTime.get(Calendar.HOUR_OF_DAY);
-                            currentMin = currentTime.get(Calendar.MINUTE);
-
-                            if (beforeCurrentTime) {
-                                realStartTime = new Time(currentHour, currentMin);
-                            }
-
-                            NotificationMessage message = new NotificationMessage(false, startTime, endTime, str_songInterval, str_pauseInterval, realStartTime);
-                            dataManager.sendPushNotification(message, mStr_DeviceID);
-
-                            calendar.add(Calendar.MINUTE, songInterval);//TODO 1st error pauseInterval used instead of songInterval
-                            currentTime.add(Calendar.MINUTE, songInterval);
-                        }
+                        calendar.add(Calendar.MINUTE, songInterval);//TODO 1st error pauseInterval used instead of songInterval
+                        currentTime.add(Calendar.MINUTE, songInterval);
                     }
                 }
             }
         });
 
-        builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
+        builder.setNegativeButton("cancel", (dialog, which) -> {
         });
 
         builder.create().show();
@@ -310,16 +300,9 @@ public class MainListActivity extends FragmentActivity {
         int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
         int minute = mcurrentTime.get(Calendar.MINUTE);
         TimePickerDialog mTimePicker;
-        mTimePicker = new TimePickerDialog(this, (timePicker, selectedHour, selectedMinute) -> {
-
-            String str = Integer.toString(selectedMinute);
-            if (str.equals("0")) {
-                txt_time.setText(selectedHour + ":" + "00");
-            } else {
-                txt_time.setText(selectedHour + ":" + selectedMinute);
-            }
-
-        }, hour, minute, true);
+        mTimePicker = new TimePickerDialog(this, (timePicker, selectedHour, selectedMinute) ->
+                txt_time.setText(String.format("%02d:%02d", selectedHour, selectedMinute)),
+                hour, minute, true);
         mTimePicker.setTitle("Select Time");
         mTimePicker.show();
     }

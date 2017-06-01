@@ -94,7 +94,7 @@ public class BackgroundVideoRecordingService extends Service {
 
         camera.release();
 
-        windowManager.removeView(surfaceView);
+        if (windowManager!= null) windowManager.removeView(surfaceView);
         isRecording = false;
         mediaRecorder = null;
 
@@ -125,7 +125,6 @@ public class BackgroundVideoRecordingService extends Service {
             }
 
             if (hasFrontCamera) idCurrentCamera = idFrontCamera;
-
             if (hasBackCamera) idCurrentCamera = idBackCamera;
 
             return true;
@@ -170,7 +169,7 @@ public class BackgroundVideoRecordingService extends Service {
                 mediaRecorder.setCamera(camera);
                 mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
                 mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_480P));
+                mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
                 filepath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
                         .getAbsolutePath() + "/" + DateFormat.format("yyyy-MM-dd_HH-mm-ss", new Date().getTime()) +
                         ".mp4";

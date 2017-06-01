@@ -5,11 +5,13 @@ import java.util.Date;
 
 public class Message {
     public String deviceId;
+    public String deviceName;
     public String msg;
     public Integer volume;
     public Double latitude;
     public Double longitude;
     public String time;
+    public Long timeStamp;
     public String videoLink;
 
     public Message() {

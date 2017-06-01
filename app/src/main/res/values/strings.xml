@@ -10,7 +10,7 @@
     <string name="playing_Song_Name">Song Name : </string>
     <string name="playing">Playing...</string>
     <string name="pause">Pause</string>
-    <string name="device_name">Enter Email</string>
+    <string name="device_name">Enter your name</string>
     <string name="register_btn_txt">Register Device </string>
     <string name="warning_login">Please input the device Name</string>
     <string name="show_login_success">Register Success</string>
