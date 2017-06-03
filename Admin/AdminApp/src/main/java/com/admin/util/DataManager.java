@@ -1,47 +1,22 @@
 package com.admin.util;
 
-import android.content.Context;
-
-import com.admin.AppConstant;
-import com.admin.model.Message;
 import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
-import com.google.firebase.database.FirebaseDatabase;
 
-public class DataManager {
-    private Context context;
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
-    public DataManager(Context context) {
-        this.context = context;
-    }
+public interface DataManager {
 
-    public void saveSettings(PhoneSettings phoneSettings) {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId)
-                .setValue(phoneSettings);
-    }
+    void saveSettings(PhoneSettings phoneSettings);
 
-    public void sendPushNotification(NotificationMessage message, String deviceId) {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_MESSAGES).child(deviceId)
-                .setValue(new Message(message.getJsonObject().toString()));
-    }
+    void sendPushNotification(NotificationMessage message, String deviceId);
 
-    public void sendVolumePushNotification(int volume, String deviceId) {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_MESSAGES).child(deviceId).setValue(new Message(volume));
-    }
+    void sendVolumePushNotification(int volume, String deviceId);
 
-    public void setGpsStatus(String deviceID, Boolean isChecked) {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceID)
-                .child("gpsEnabled")
-                .setValue(isChecked);
-    }
+    void setGpsStatus(String deviceID, Boolean isChecked);
 
-    public void clearMessages() {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_ADMIN_MESSAGES)
-                .removeValue();
-    }
+    void clearMessages();
 }

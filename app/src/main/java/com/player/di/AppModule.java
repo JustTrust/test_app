@@ -4,14 +4,19 @@ package com.player.di;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
-import com.player.DataSingleton;
 import com.player.util.DataManager;
+import com.player.util.FirebaseDataManager;
 import com.player.util.NotificationUtils;
 
 import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
+
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
 @Module
 public class AppModule {
@@ -29,14 +34,8 @@ public class AppModule {
 
     @Provides
     @Singleton
-    DataSingleton provideDataHolder(){
-        return new DataSingleton();
-    }
-
-    @Provides
-    @Singleton
     DataManager provideDataManager(Context context){
-        return new DataManager(context);
+        return new FirebaseDataManager(context);
     }
 
     @Provides

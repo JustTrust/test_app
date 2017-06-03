@@ -1,4 +1,4 @@
-package com.admin.ui;
+package com.admin.ui.adapters;
 
 import android.content.Context;
 import android.view.View;

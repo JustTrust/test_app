@@ -16,6 +16,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.player.AppConstant;
 import com.player.PlayerApplication;
 import com.player.model.Message;
+import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
 
 import javax.inject.Inject;
@@ -31,6 +32,8 @@ public class PlayerInfoChangeReceiver {
     Context context;
     @Inject
     NotificationUtils notificationUtils;
+    @Inject
+    DataManager dataManager;
 
     public PlayerInfoChangeReceiver() {
         PlayerApplication.getAppComponent().inject(this);
@@ -38,7 +41,7 @@ public class PlayerInfoChangeReceiver {
     }
 
     private void init() {
-        String deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        String deviceId = dataManager.getDeviceId();
         FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_MESSAGES)
                 .child(deviceId).addValueEventListener(new ValueEventListener() {
@@ -53,9 +56,7 @@ public class PlayerInfoChangeReceiver {
                 } else if (!TextUtils.isEmpty(msg.msg)) {
                     notificationUtils.showNotificationMessage(msg.msg);
                 }
-                FirebaseDatabase.getInstance().getReference()
-                        .child(AppConstant.NODE_MESSAGES)
-                        .child(deviceId).removeValue();
+                dataManager.deleteMessage();
             }
 
             @Override

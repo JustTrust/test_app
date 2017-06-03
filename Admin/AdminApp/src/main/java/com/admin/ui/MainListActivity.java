@@ -5,7 +5,6 @@ import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +24,7 @@ import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
 import com.admin.model.Time;
 import com.admin.model.UserConnectionStatus;
+import com.admin.ui.adapters.PlayerAppListAdapter;
 import com.admin.util.DataManager;
 import com.admin.util.Utils;
 import com.google.firebase.auth.FirebaseAuth;
@@ -32,6 +32,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.lang.reflect.Field;
@@ -51,7 +52,7 @@ import butterknife.OnClick;
 /**
  * @desc MainListActivity for list of register player device
  */
-public class MainListActivity extends FragmentActivity {
+public class MainListActivity extends BaseActivity {
 
     @BindView(R.id.imgLeft)
     ImageView imgLeft;
@@ -65,9 +66,8 @@ public class MainListActivity extends FragmentActivity {
     @Inject
     DataManager dataManager;
     private ProgressDialog pDialog;
-    private PlayerAppListAdapter mAdpt_playerApps;
-    private ArrayList<UserConnectionStatus> mArlst_players = new ArrayList<>();
-    private View.OnClickListener onDateViewClickListener = v -> getTime((TextView) v);
+    private PlayerAppListAdapter listAdapter;
+    private ArrayList<UserConnectionStatus> playersList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +83,7 @@ public class MainListActivity extends FragmentActivity {
                 menuKeyField.setBoolean(config, false);
             }
         } catch (Exception ex) {
-            // Ignore
+            ex.printStackTrace();
         }
 
         pDialog = new ProgressDialog(MainListActivity.this);
@@ -123,52 +123,53 @@ public class MainListActivity extends FragmentActivity {
 
     private void getPlayersInfo() {
         if (pDialog != null) pDialog.show();
-        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES)
-                .addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                        mArlst_players.add(dataSnapshot.getValue(UserConnectionStatus.class));
-                        mAdpt_playerApps.notifyDataSetChanged();
-                        if (pDialog != null) pDialog.dismiss();
-                    }
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES);
+        ChildEventListener deviceListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                playersList.add(dataSnapshot.getValue(UserConnectionStatus.class));
+                listAdapter.notifyDataSetChanged();
+                if (pDialog != null) pDialog.dismiss();
+            }
 
-                    @Override
-                    public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                        UserConnectionStatus status = dataSnapshot.getValue(UserConnectionStatus.class);
-                        int index = mArlst_players.indexOf(status);
-                        if (index > -1) {
-                            mArlst_players.set(index, status);
-                        } else {
-                            mArlst_players.add(status);
-                        }
-                        mAdpt_playerApps.notifyDataSetChanged();
-                        if (pDialog != null) pDialog.dismiss();
-                    }
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                UserConnectionStatus status = dataSnapshot.getValue(UserConnectionStatus.class);
+                int index = playersList.indexOf(status);
+                if (index > -1) {
+                    playersList.set(index, status);
+                } else {
+                    playersList.add(status);
+                }
+                listAdapter.notifyDataSetChanged();
+                if (pDialog != null) pDialog.dismiss();
+            }
 
-                    @Override
-                    public void onChildRemoved(DataSnapshot dataSnapshot) {
-                        mArlst_players.remove(dataSnapshot.getValue(UserConnectionStatus.class));
-                        mAdpt_playerApps.notifyDataSetChanged();
-                        if (pDialog != null) pDialog.dismiss();
-                    }
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                playersList.remove(dataSnapshot.getValue(UserConnectionStatus.class));
+                listAdapter.notifyDataSetChanged();
+                if (pDialog != null) pDialog.dismiss();
+            }
 
-                    @Override
-                    public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                        if (pDialog != null) pDialog.dismiss();
-                    }
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                if (pDialog != null) pDialog.dismiss();
+            }
 
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        if (pDialog != null) pDialog.dismiss();
-                    }
-                });
-
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                if (pDialog != null) pDialog.dismiss();
+            }
+        };
+        deviceRef.addChildEventListener(deviceListener);
+        registerFbListener(deviceRef, deviceListener);
     }
 
     private void initUI() {
-        mAdpt_playerApps = new PlayerAppListAdapter(mArlst_players, (deviceID, isChecked) ->
+        listAdapter = new PlayerAppListAdapter(playersList, (deviceID, isChecked) ->
                 dataManager.setGpsStatus(deviceID, isChecked));
-        mLst_playerApps.setAdapter(mAdpt_playerApps);
+        mLst_playerApps.setAdapter(listAdapter);
     }
 
     @OnClick(R.id.txtRight)
@@ -207,9 +208,8 @@ public class MainListActivity extends FragmentActivity {
         final TextView tvStartTime = (TextView) viewRoot.findViewById(R.id.txt_startTime);
         final TextView tvEndTime = (TextView) viewRoot.findViewById(R.id.txt_endTime);
 
-        tvStartTime.setOnClickListener(onDateViewClickListener);
-        tvEndTime.setOnClickListener(onDateViewClickListener);
-        //do something with your view
+        tvStartTime.setOnClickListener(v -> Utils.getTime((TextView) v, this));
+        tvEndTime.setOnClickListener(v -> Utils.getTime((TextView) v, this));
 
         builder.setView(viewRoot);
         builder.setPositiveButton("set", (dialog, which) -> {
@@ -223,7 +223,7 @@ public class MainListActivity extends FragmentActivity {
             } else {
 
                 List<UserConnectionStatus> connectedDevices = new ArrayList<>();
-                for (UserConnectionStatus connectionStatus : mArlst_players) {
+                for (UserConnectionStatus connectionStatus : playersList) {
                     if (Utils.isConnected(connectionStatus.createdAt)) {
                         connectedDevices.add(connectionStatus);
                     }
@@ -293,18 +293,6 @@ public class MainListActivity extends FragmentActivity {
         });
 
         builder.create().show();
-    }
-
-    private void getTime(final TextView txt_time) {
-        Calendar mcurrentTime = Calendar.getInstance();
-        int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
-        int minute = mcurrentTime.get(Calendar.MINUTE);
-        TimePickerDialog mTimePicker;
-        mTimePicker = new TimePickerDialog(this, (timePicker, selectedHour, selectedMinute) ->
-                txt_time.setText(String.format("%02d:%02d", selectedHour, selectedMinute)),
-                hour, minute, true);
-        mTimePicker.setTitle("Select Time");
-        mTimePicker.show();
     }
 
 }

@@ -5,10 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.player.DataSingleton;
 import com.player.PlayerApplication;
 import com.player.foreground.events.ConnectivityChangedEvent;
-import com.player.model.PhoneSettings;
 import com.player.util.DataManager;
 
 import org.greenrobot.eventbus.EventBus;
@@ -20,8 +18,6 @@ public class ConnectivityChangeSyncService extends IntentService {
     private static final String NAME = ConnectivityChangeSyncService.class.getName();
     private static final String EXTRA_IS_NETWORK_CONNECTED = "EXTRA_IS_NETWORK_CONNECTED";
 
-    @Inject
-    DataSingleton dataSingleton;
     @Inject
     DataManager dataManager;
 
@@ -44,16 +40,6 @@ public class ConnectivityChangeSyncService extends IntentService {
         }
         boolean isNetworkConnected = extras.getBoolean(EXTRA_IS_NETWORK_CONNECTED);
         EventBus.getDefault().post(new ConnectivityChangedEvent(isNetworkConnected));
-
-        if (isNetworkConnected && dataSingleton.mDeviceSettings != null) {
-            PhoneSettings settings = new PhoneSettings();
-            settings.endTime = dataSingleton.mDeviceSettings.endTime;
-            settings.songInterval = dataSingleton.mDeviceSettings.songInterval;
-            settings.pauseInterval = dataSingleton.mDeviceSettings.pauseInterval;
-            settings.startTime = dataSingleton.mDeviceSettings.startTime;
-            dataManager.saveSettings(settings);
-            dataSingleton.mDeviceSettings = null;
-        }
 
     }
 

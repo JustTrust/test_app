@@ -2,6 +2,7 @@ package com.player.ui.activity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.inputmethod.EditorInfo;
@@ -12,7 +13,6 @@ import android.widget.Toast;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.player.AppConstant;
-import com.player.DataSingleton;
 import com.player.PlayerApplication;
 import com.player.R;
 import com.player.model.UserConnectionStatus;
@@ -32,8 +32,7 @@ public class LoginActivity extends Activity {
     EditText mEdit_deviceName;
     @BindView(R.id.btn_register)
     Button mBtn_register;
-    @Inject
-    DataSingleton dataSingleton;
+
     @Inject
     DataManager dataManager;
 
@@ -102,9 +101,10 @@ public class LoginActivity extends Activity {
     }
 
     private void storeUserConnection(FirebaseUser user) {
-        UserConnectionStatus userConnectionStatus = new UserConnectionStatus(dataManager.getDeviceId(),
-                user.getEmail().replace(AppConstant.USER_EMAIL, ""));
-        dataManager.storeUserConnection(userConnectionStatus);
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        String volume_level = String.valueOf(am.getStreamVolume(AudioManager.STREAM_MUSIC));
+        UserConnectionStatus status = new UserConnectionStatus(user.getEmail().replace(AppConstant.USER_EMAIL, ""),volume_level);
+        dataManager.storeUserConnection(status);
     }
 
 }

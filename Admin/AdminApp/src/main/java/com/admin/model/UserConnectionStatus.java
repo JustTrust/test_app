@@ -4,7 +4,7 @@ package com.admin.model;
 public class UserConnectionStatus {
     public String deviceName;
     public String deviceID;
-    public boolean gpsEnabled;
+    public Boolean gpsEnabled;
     public String strSong;
     public String latitude;
     public String longitude;

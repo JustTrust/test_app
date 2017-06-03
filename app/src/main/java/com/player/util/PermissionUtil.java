@@ -7,6 +7,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
+
 public class PermissionUtil {
 
     public static boolean checkLocationPermission(int requestCode, Activity activity) {
@@ -22,12 +27,11 @@ public class PermissionUtil {
         }
     }
 
-    public static boolean checkReadPermission(int requestCode, Activity activity) {
+    public static boolean checkReadPermission(Activity activity) {
         if (ActivityCompat.checkSelfPermission(activity,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             return true;
         } else {
-            //activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, requestCode);
             return false;
         }
     }

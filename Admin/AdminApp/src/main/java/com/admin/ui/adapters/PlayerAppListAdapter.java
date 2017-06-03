@@ -1,4 +1,4 @@
-package com.admin.ui;
+package com.admin.ui.adapters;
 
 
 import android.content.Context;
@@ -14,6 +14,7 @@ import android.widget.ToggleButton;
 import com.admin.AppConstant;
 import com.admin.R;
 import com.admin.model.UserConnectionStatus;
+import com.admin.ui.PlayerSettingActivity;
 import com.admin.util.Utils;
 
 import java.util.ArrayList;
@@ -21,22 +22,22 @@ import java.util.ArrayList;
 
 public class PlayerAppListAdapter extends BaseAdapter {
 
-    private ArrayList<UserConnectionStatus> mArlst_players;
+    private ArrayList<UserConnectionStatus> playersList;
     private GpsChangedListener listener;
 
-    public PlayerAppListAdapter(ArrayList<UserConnectionStatus> mArlst_players, GpsChangedListener listener) {
-        this.mArlst_players = mArlst_players;
+    public PlayerAppListAdapter(ArrayList<UserConnectionStatus> playersList, GpsChangedListener listener) {
+        this.playersList = playersList;
         this.listener = listener;
     }
 
     @Override
     public int getCount() {
-        return mArlst_players.size();
+        return playersList.size();
     }
 
     @Override
     public UserConnectionStatus getItem(int position) {
-        return mArlst_players.get(position);
+        return playersList.get(position);
     }
 
     @Override
@@ -59,20 +60,17 @@ public class PlayerAppListAdapter extends BaseAdapter {
         } else {
             holder = (ViewHolder) view.getTag();
         }
-        holder.txt_deviceName.setText(mArlst_players.get(position).deviceName);
+        final UserConnectionStatus status = playersList.get(position);
+        holder.txt_deviceName.setText(status.deviceName);
 
         boolean isSettingsAvailableForDevice;
 
-        if (Utils.isConnected(mArlst_players.get(position).createdAt)) {
-            UserConnectionStatus status = mArlst_players.get(position);
-            //int remainTime = status.remain;
-
-            if (mArlst_players.get(position).isPlaying) {
+        if (Utils.isConnected(status.createdAt)) {
+            if (status.isPlaying) {
                 holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.playing)));
             } else {
                 holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.pause)));
             }
-
             isSettingsAvailableForDevice = true;
         } else {
             holder.txt_connStatus.setText(Html.fromHtml(context.getString(R.string.disconnected)));
@@ -80,11 +78,12 @@ public class PlayerAppListAdapter extends BaseAdapter {
         }
 
         holder.toggle_GPS.setOnCheckedChangeListener(null);
-        holder.toggle_GPS.setChecked(mArlst_players.get(position).gpsEnabled);
+        holder.toggle_GPS.setChecked(status.gpsEnabled);
 
         if (isSettingsAvailableForDevice) {
-            view.setOnClickListener(v -> context.startActivity(new Intent(context, PlayerSettingActivity.class)
-                    .putExtra(AppConstant.FIELD_DEVICE_ID, mArlst_players.get(position).deviceID)));
+            view.setOnClickListener(v -> context.startActivity(
+                    new Intent(context, PlayerSettingActivity.class)
+                    .putExtra(AppConstant.FIELD_DEVICE_ID, status.deviceID)));
             holder.toggle_GPS.setEnabled(true);
         } else {
             view.setOnClickListener(null);
@@ -93,13 +92,13 @@ public class PlayerAppListAdapter extends BaseAdapter {
 
         holder.toggle_GPS.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (listener != null) {
-                listener.onGpsStatusChanged(mArlst_players.get(position).deviceID, isChecked);
+                listener.onGpsStatusChanged(status.deviceID, isChecked);
             }
         });
         return view;
     }
 
-    interface GpsChangedListener {
+    public interface GpsChangedListener {
         void onGpsStatusChanged(String deviceID, Boolean isChecked);
     }
 

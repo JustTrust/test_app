@@ -1,6 +1,5 @@
 package com.admin.ui;
 
-import android.app.Activity;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -12,8 +11,10 @@ import android.widget.VideoView;
 
 import com.admin.AppConstant;
 import com.admin.R;
+import com.admin.ui.adapters.VideoAdapter;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -23,8 +24,12 @@ import java.util.ArrayList;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
-public class VideoActivity extends Activity {
+public class VideoActivity extends BaseActivity {
     @BindView(R.id.video_list)
     RecyclerView videoList;
     @BindView(R.id.video_view)
@@ -44,29 +49,31 @@ public class VideoActivity extends Activity {
     private void initUI() {
         mStr_DeviceID = getIntent().getStringExtra(AppConstant.FIELD_DEVICE_ID);
         if (TextUtils.isEmpty(mStr_DeviceID)) return;
-        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_VIDEO)
-                .child(mStr_DeviceID)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
-                            for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                                String path = (String) postSnapshot.getValue();
-                                if (!TextUtils.isEmpty(path)) {
-                                    list.add(path);
-                                }
-                            }
-                            VideoAdapter adapter = new VideoAdapter(list, v -> showVideo(((TextView) v).getText()));
-                            videoList.setAdapter(adapter);
-                            adapter.notifyDataSetChanged();
+        DatabaseReference videoRef = FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_VIDEO)
+                .child(mStr_DeviceID);
+        ValueEventListener videoListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
+                    for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                        String path = (String) postSnapshot.getValue();
+                        if (!TextUtils.isEmpty(path)) {
+                            list.add(path);
                         }
                     }
+                    VideoAdapter adapter = new VideoAdapter(list, v -> showVideo(((TextView) v).getText()));
+                    videoList.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
+                }
+            }
 
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
 
-                    }
-                });
+            }
+        };
+        videoRef.addListenerForSingleValueEvent(videoListener);
+        registerFbListener(videoRef, videoListener);
 
     }
 

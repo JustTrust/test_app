@@ -5,11 +5,17 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 
 import com.admin.util.DataManager;
+import com.admin.util.FireBaseDataManager;
 
 import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
+
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
 @Module
 public class AppModule {
@@ -28,7 +34,7 @@ public class AppModule {
     @Provides
     @Singleton
     DataManager provideDataManager(Context context){
-        return new DataManager(context);
+        return new FireBaseDataManager(context);
     }
 
 }

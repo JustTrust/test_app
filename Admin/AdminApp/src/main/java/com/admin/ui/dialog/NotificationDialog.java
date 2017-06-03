@@ -15,7 +15,7 @@ import com.admin.AdminApplication;
 import com.admin.AppConstant;
 import com.admin.R;
 import com.admin.model.Message;
-import com.admin.ui.LocationNotificationsAdapter;
+import com.admin.ui.adapters.LocationNotificationsAdapter;
 import com.admin.util.DataManager;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

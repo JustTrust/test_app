@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 
-@SuppressWarnings("unchecked")
 public class PlaySongsN {
     public static final int STATUS_PLAYING = 0;
     public static final int STATUS_PAUSE = 1;
@@ -25,7 +24,7 @@ public class PlaySongsN {
     public static final int STATUS_HARD_STOPPED = 3;
     public static final int STATUS_NONE = -1;
     private PlayListener listener;
-    private ArrayList<MusicInfo> mlst_musics = PlayerActivity.mlst_Musics;
+    private ArrayList<MusicInfo> mlst_musics = PlayerActivity.listMusics;
     private NotificationMessage playerInfo = null;
     private MediaPlayer m_player;
     private int mPlayerStatus = STATUS_NONE;
@@ -67,16 +66,10 @@ public class PlaySongsN {
             m_player.prepare();
             m_player.start();
             mPlayerStatus = STATUS_PLAYING;
-            if (listener != null){
-                listener.updatePlayStatus(STATUS_PLAYING,
-                        m_player.getDuration()>0 ? m_player.getDuration() : 0);
-            }
             return true;
         } catch (IOException e) {
             e.printStackTrace();
-            if (listener != null){
-                listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
-            }
+            mPlayerStatus = STATUS_HARD_STOPPED;
             return false;
         }
     }
@@ -91,43 +84,27 @@ public class PlaySongsN {
             m_player.prepare();
             m_player.start();
             mPlayerStatus = STATUS_PLAYING;
-            if (listener != null){
-                listener.updatePlayStatus(STATUS_PLAYING,
-                        m_player.getDuration()>0 ? m_player.getDuration() : 0);
-            }
             return true;
         } catch (IOException e) {
             e.printStackTrace();
-            if (listener != null){
-                listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
-            }
+            mPlayerStatus = STATUS_HARD_STOPPED;
             return false;
         }
     }
 
     private void pause() {
         mPlayerStatus = STATUS_PAUSE;
-        if (listener != null){
-            listener.updatePlayStatus(STATUS_PAUSE, 0);
-        }
         m_player.pause();
     }
 
     private void stop() {
         mPlayerStatus = STATUS_STOPPED;
-        if (listener != null){
-            listener.updatePlayStatus(STATUS_STOPPED, 0);
-        }
         m_player.pause();
     }
 
     public void resume() {
         mPlayerStatus = STATUS_PLAYING;
         m_player.start();
-        if (listener != null){
-            listener.updatePlayStatus(STATUS_PLAYING,
-                    m_player.getDuration()>0 ? m_player.getDuration() : 0);
-        }
     }
 
     /**
@@ -200,6 +177,9 @@ public class PlaySongsN {
         //check here if any time we have reached the end time state
         if (isEndTimeReached()) {
             stop();
+        }
+        if (listener != null){
+            listener.updatePlayStatus(mPlayerStatus, counter);
         }
     }
 

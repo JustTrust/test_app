@@ -3,7 +3,6 @@ package com.admin.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.text.Html;
 import android.util.ArrayMap;
 import android.view.View;
@@ -29,6 +28,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.clustering.Cluster;
@@ -40,8 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 
-
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends BaseActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private View mWindow;
@@ -62,8 +61,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         actSearch = (AutoCompleteTextView) findViewById(R.id.actSearch);
@@ -96,40 +94,44 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void getDevices() {
-        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        mIsDeviceScheduleSetUpMap.clear();
-                        if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
-                            for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                                UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
-                                FirebaseDatabase.getInstance().getReference()
-                                        .child(AppConstant.NODE_SETTING).child(status.deviceID)
-                                        .addListenerForSingleValueEvent(new ValueEventListener() {
-                                            @Override
-                                            public void onDataChange(DataSnapshot dataSnapshot) {
-                                                PhoneSettings setting = dataSnapshot.getValue(PhoneSettings.class);
-                                                if (setting != null) {
-                                                    mIsDeviceScheduleSetUpMap.put(status, setting);
-                                                    addMarkersToMap();
-                                                }
-                                            }
-
-                                            @Override
-                                            public void onCancelled(DatabaseError databaseError) {
-
-                                            }
-                                        });
+        DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES);
+        ValueEventListener deviceListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                mIsDeviceScheduleSetUpMap.clear();
+                if (dataSnapshot != null && dataSnapshot.getChildrenCount() > 0) {
+                    for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                        UserConnectionStatus status = postSnapshot.getValue(UserConnectionStatus.class);
+                        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
+                                .child(AppConstant.NODE_SETTING).child(status.deviceID);
+                        ValueEventListener settingListener = new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                PhoneSettings setting = dataSnapshot.getValue(PhoneSettings.class);
+                                if (setting != null) {
+                                    mIsDeviceScheduleSetUpMap.put(status, setting);
+                                    addMarkersToMap();
+                                }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
 
+                            }
+                        };
+                        settingRef.addListenerForSingleValueEvent(settingListener);
+                        registerFbListener(settingRef, settingListener);
                     }
-                });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        deviceRef.addListenerForSingleValueEvent(deviceListener);
+        registerFbListener(deviceRef, deviceListener);
     }
 
     @Override
@@ -273,12 +275,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else if (title[1].equalsIgnoreCase("disconnected")) {
                 txtPlayStatus.setText(Html.fromHtml(getString(R.string.disconnected)));
             }
-            txtStartTime.setText("Start : " + snippet[0]);
-            txtEndTime.setText("End : " + snippet[1]);
-            txtPlayTime.setText("Play : " + snippet[2] + "mins");
-            txtPauseTime.setText("Pause : " + snippet[3] + "mins");
+            txtStartTime.setText(String.format("Start : %s", snippet[0]));
+            txtEndTime.setText(String.format("End : %s", snippet[1]));
+            txtPlayTime.setText(String.format("Play : %s mins", snippet[2]));
+            txtPauseTime.setText(String.format("Pause : %s mins", snippet[3]));
         }
-
     }
 
     /**
@@ -345,11 +346,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             super.onClusterItemRendered(clusterItem, marker);
 
             markerMap.put(clusterItem.getTitle().split("_:_")[0], marker);
-            //BitmapDescriptor markerColor = getMarkerIcon(getResources().getString(R.string.status_connected));
             marker.setTitle(clusterItem.getTitle());
             marker.setSnippet(clusterItem.getSnippet());
             marker.setIcon(clusterItem.getColor());
-            //System.out.println("ClusterRenderer.onClusterItemRendered strSearch : " + strSearch);
             if (!strSearch.equalsIgnoreCase("")) {
                 if (clusterItem.getTitle().split("_:_")[0].equalsIgnoreCase(strSearch)) {
                     markerMap.get(clusterItem.getTitle().split("_:_")[0]).showInfoWindow();

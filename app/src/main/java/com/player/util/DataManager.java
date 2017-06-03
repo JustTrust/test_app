@@ -1,125 +1,34 @@
 package com.player.util;
 
 
-import android.content.Context;
-import android.net.Uri;
-import android.provider.Settings;
-import android.text.TextUtils;
-import android.util.Log;
-
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.player.AppConstant;
-import com.player.model.Message;
 import com.player.model.PhoneSettings;
 import com.player.model.UserConnectionStatus;
 
-import java.io.File;
-import java.util.Calendar;
-import java.util.Date;
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
-public class DataManager {
+public interface DataManager {
 
-    private static final String TAG = DataManager.class.getSimpleName();
-    private Context context;
-    private String deviceId;
+     void saveSettings(PhoneSettings phoneSettings);
 
-    public DataManager(Context context) {
-        this.context = context;
-        deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
-    }
+     void saveStatus(UserConnectionStatus status);
 
-    public void saveSettings(PhoneSettings phoneSettings) {
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(deviceId);
-        phoneSettings.deviceId = deviceId;
-        settingRef.setValue(phoneSettings);
-    }
+     void saveCoordinateInStatus(final String latitude, final String longitude);
 
-    public void saveStatus(UserConnectionStatus status) {
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceId);
-        status.createdAt = new Date().getTime();
-        status.deviceID = deviceId;
-        settingRef.setValue(status);
-    }
+     void sendNotificationToAdmin(double latitude, double longitude);
 
-    public void saveCoordinateInStatus(final String latitude, final String longitude) {
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceId);
-        settingRef.child("createdAt").setValue(new Date().getTime());
-        settingRef.child("latitude").setValue(latitude);
-        settingRef.child("longitude").setValue(longitude);
-    }
+     void storeUserConnection(UserConnectionStatus userConnectionStatus);
 
-    public void sendNotificationToAdmin(double latitude, double longitude) {
+     FirebaseUser getCurrentUser();
 
-        Date now = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(now);
-        int hours = cal.get(Calendar.HOUR_OF_DAY);
-        int min = cal.get(Calendar.MINUTE);
+     String getDeviceId();
 
-        Message msg = new Message(latitude, longitude, hours + ":" + min);
-        msg.deviceId = deviceId;
-        msg.deviceName = getDeviceName();
-        msg.timeStamp = cal.getTimeInMillis();
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_ADMIN_MESSAGES).child(deviceId)
-                .setValue(msg);
-    }
+     void logout();
 
-    private String getDeviceName() {
-        FirebaseUser user = getCurrentUser();
-        if (user != null) {
-            return user.getEmail().replace(AppConstant.USER_EMAIL, "");
-        } else {
-            return "";
-        }
-    }
+     void storeFileInStorage(String filepath);
 
-    public void storeUserConnection(UserConnectionStatus userConnectionStatus) {
-        DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceId);
-        userConnectionStatus.createdAt = new Date().getTime();
-        connected_dev.setValue(userConnectionStatus);
-    }
-
-    public FirebaseUser getCurrentUser() {
-        return FirebaseAuth.getInstance().getCurrentUser();
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public void logout() {
-        if (getCurrentUser() != null) {
-            FirebaseAuth.getInstance().signOut();
-        }
-        DatabaseReference connected_dev = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_DEVICES).child(deviceId);
-        connected_dev.child("createdAt").setValue(new Date().getTime());
-        connected_dev.child("isPlaying").setValue(Boolean.FALSE);
-    }
-
-    public void storeFileInStorage(String filepath) {
-        if (TextUtils.isEmpty(filepath)) return;
-        File file = new File(filepath);
-        Uri path = Uri.fromFile(file);
-        StorageReference fileRef = FirebaseStorage.getInstance()
-                .getReference().child(deviceId).child(file.getName());
-        fileRef.putFile(path).addOnCompleteListener(task -> {
-            Log.d(TAG, "storeFileInStorage: file was send " + filepath);
-            FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_VIDEO)
-                    .child(getDeviceId()).push().setValue(file.getName());
-        }).addOnFailureListener(e -> {
-            Log.d(TAG, "storeFileInStorage: file wasnt send " + filepath);
-        });
-    }
-
+     void deleteMessage();
 }

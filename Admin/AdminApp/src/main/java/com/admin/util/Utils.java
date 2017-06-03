@@ -1,11 +1,14 @@
 package com.admin.util;
 
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.widget.TextView;
 
 import com.admin.AppConstant;
 
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -22,5 +25,17 @@ public class Utils {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+
+    public static void getTime(final TextView txt_time, Context context) {
+        Calendar currentTime = Calendar.getInstance();
+        int hour = currentTime.get(Calendar.HOUR_OF_DAY);
+        int minute = currentTime.get(Calendar.MINUTE);
+        TimePickerDialog mTimePicker;
+        mTimePicker = new TimePickerDialog(context, (timePicker, selectedHour, selectedMinute) -> {
+            txt_time.setText(String.format("%02d:%02d", selectedHour , selectedMinute));
+        }, hour, minute, true);
+        mTimePicker.setTitle("Select Time");
+        mTimePicker.show();
     }
 }

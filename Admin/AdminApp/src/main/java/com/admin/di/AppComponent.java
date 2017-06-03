@@ -8,6 +8,10 @@ import javax.inject.Singleton;
 
 import dagger.Component;
 
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
 @Component(modules = {AppModule.class})
 @Singleton

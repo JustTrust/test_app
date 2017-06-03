@@ -4,7 +4,7 @@ package com.player.model;
 public class UserConnectionStatus {
     public String deviceName;
     public String deviceID;
-    public boolean gpsEnabled;
+    public Boolean gpsEnabled;
     public String strSong;
     public String latitude;
     public String longitude;
@@ -16,9 +16,13 @@ public class UserConnectionStatus {
     public UserConnectionStatus() {
     }
 
-    public UserConnectionStatus(String deviceID, String deviceName) {
+    public UserConnectionStatus(String deviceName, String volume) {
         this.deviceName = deviceName;
-        this.deviceID = deviceID;
+        this.gpsEnabled = false;
+        this.strSong = "";
+        this.isPlaying = false;
+        this.remain = -1;
+        this.volume = volume;
     }
 
     public UserConnectionStatus(String deviceName, String deviceID, boolean gpsEnabled,

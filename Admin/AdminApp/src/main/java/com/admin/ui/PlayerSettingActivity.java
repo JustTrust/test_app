@@ -3,6 +3,7 @@ package com.admin.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.TimePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
@@ -20,8 +21,10 @@ import com.admin.model.PhoneSettings;
 import com.admin.model.Time;
 import com.admin.model.UserConnectionStatus;
 import com.admin.util.DataManager;
+import com.admin.util.Utils;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
@@ -39,7 +42,7 @@ import butterknife.ButterKnife;
 /**
  * @desc PlayerSettingActivity for set interval & play time for specific player
  */
-public class PlayerSettingActivity extends Activity {
+public class PlayerSettingActivity extends BaseActivity {
 
     @BindView(R.id.btnVolumeDown)
     Button btnVolumeDown;
@@ -89,8 +92,8 @@ public class PlayerSettingActivity extends Activity {
     private void initUI() {
         isInitUI = true;
         mStr_DeviceID = getIntent().getStringExtra(AppConstant.FIELD_DEVICE_ID);
-        mTxt_startTimepicker.setOnClickListener(v -> getTime(mTxt_startTimepicker));
-        mTxt_endTimepicker.setOnClickListener(v -> getTime(mTxt_endTimepicker));
+        mTxt_startTimepicker.setOnClickListener(v -> Utils.getTime(mTxt_startTimepicker, this));
+        mTxt_endTimepicker.setOnClickListener(v -> Utils.getTime(mTxt_endTimepicker, this));
         mBtn_update.setOnClickListener(v -> {
             NotificationMessage message = getPlayerInfo();
             dataManager.sendPushNotification(message, mStr_DeviceID);
@@ -120,10 +123,11 @@ public class PlayerSettingActivity extends Activity {
 
         mTimer = new Timer();
         mDurationTask = new CheckStatusTask();
-        mTimer.schedule(mDurationTask, 0, 3000);
+        mTimer.schedule(mDurationTask, 0, 1000);
 
-        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_SETTING)
-                .child(mStr_DeviceID).addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(mStr_DeviceID);
+        ValueEventListener settingListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 deviceSettings = dataSnapshot.getValue(PhoneSettings.class);
@@ -139,19 +143,9 @@ public class PlayerSettingActivity extends Activity {
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        });
-    }
-
-    private void getTime(final TextView txt_time) {
-        Calendar mcurrentTime = Calendar.getInstance();
-        int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
-        int minute = mcurrentTime.get(Calendar.MINUTE);
-        TimePickerDialog mTimePicker;
-        mTimePicker = new TimePickerDialog(this, (timePicker, selectedHour, selectedMinute) -> {
-                txt_time.setText(String.format("%02d:%02d", selectedHour , selectedMinute));
-        }, hour, minute, true);
-        mTimePicker.setTitle("Select Time");
-        mTimePicker.show();
+        };
+        settingRef.addListenerForSingleValueEvent(settingListener);
+        registerFbListener(settingRef, settingListener);
     }
 
     private NotificationMessage getPlayerInfo() {
@@ -178,8 +172,9 @@ public class PlayerSettingActivity extends Activity {
     }
 
     public void checkConnectionStatus() {
-        FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES)
-                .child(mStr_DeviceID).addListenerForSingleValueEvent(new ValueEventListener() {
+        DatabaseReference statusRef = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_DEVICES).child(mStr_DeviceID);
+        ValueEventListener statusListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 mConnectionStatus = dataSnapshot.getValue(UserConnectionStatus.class);
@@ -190,7 +185,9 @@ public class PlayerSettingActivity extends Activity {
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        });
+        };
+        statusRef.addListenerForSingleValueEvent(statusListener);
+        registerFbListener(statusRef, statusListener);
     }
 
     @SuppressLint("DefaultLocale")
@@ -209,10 +206,9 @@ public class PlayerSettingActivity extends Activity {
             mTxt_remain.setText(" -- ");
         } else {
             mTxt_remain.setText(String.format("%02d:%02d",
-                    TimeUnit.MILLISECONDS.toMinutes(remainTime),
-                    TimeUnit.MILLISECONDS.toSeconds(remainTime) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remainTime))));
-        }
+                    TimeUnit.SECONDS.toMinutes(remainTime),
+                    remainTime - TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(remainTime))
+            ));        }
 
         if (differ < AppConstant.CONNECTION_CHECK_TIME) {
 

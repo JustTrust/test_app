@@ -1,4 +1,4 @@
-package com.admin.ui;
+package com.admin.ui.adapters;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +14,10 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+/**
+ * Created by Anton
+ * mail to a.belichenko@gmail.com
+ */
 
 public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> {
 
