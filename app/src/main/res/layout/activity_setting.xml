@@ -9,11 +9,11 @@
     <com.player.ui.views.CustomViewGroup
         android:id="@+id/action_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="36dp" />
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_gravity="center_vertical"
         android:background="@color/Dark_Gray"
         android:orientation="horizontal"
@@ -23,9 +23,10 @@
             android:id="@+id/btn_back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:background="@android:color/transparent"
-            android:src="@drawable/back_button" />
+            android:src="@drawable/back_button"
+            android:scaleType="fitCenter"/>
 
         <TextView
             style="@style/SettingTitleStyle"
@@ -39,10 +40,11 @@
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_gravity="right"
+            android:layout_alignParentEnd="true"
+            android:layout_gravity="end"
             android:background="@android:color/transparent"
-            android:src="@drawable/save_state" />
+            android:src="@drawable/save_state"
+            android:scaleType="fitCenter"/>
     </RelativeLayout>
 
 
@@ -102,13 +104,13 @@
                 <TextView
                     android:id="@+id/txt_stop"
                     style="@style/TextTitleSettingStyle"
-                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
                     android:text="@string/stop" />
 
                 <TextView
                     android:id="@+id/txt_stop_time"
                     style="@style/TextHintSettingStyle"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:hint="@string/start_stop_time_format" />
             </RelativeLayout>
 
@@ -128,14 +130,14 @@
                 <TextView
                     android:id="@+id/txt_play"
                     style="@style/TextTitleSettingStyle"
-                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
                     android:text="@string/play" />
 
                 <EditText
                     android:id="@+id/edt_play_time"
                     style="@style/NumericEditTextStyle"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:backgroundTint="@android:color/white" />
 
             </RelativeLayout>
@@ -189,7 +191,7 @@
                 <EditText
                     android:id="@+id/edt_phoneNumber"
                     style="@style/PhoneNumericEditTextStyle"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:backgroundTint="@android:color/white"
                     android:inputType="phone" />
             </RelativeLayout>

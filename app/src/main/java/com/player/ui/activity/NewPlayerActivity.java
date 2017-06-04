@@ -1,29 +1,20 @@
 package com.player.ui.activity;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.app.TimePickerDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.location.Location;
-import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,9 +45,8 @@ import com.player.model.PhoneSettings;
 import com.player.model.Time;
 import com.player.model.UserConnectionStatus;
 import com.player.movedetector.MoveDetector;
-import com.player.ui.dialog.ProgressDialog;
+import com.player.ui.views.CustomViewGroup;
 import com.player.ui.views.VerticalSeekBar;
-import com.player.util.AppUtils;
 import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
@@ -67,7 +57,6 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -116,6 +105,9 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     @BindView(R.id.seek_volume)
     VerticalSeekBar mSeekBar;
 
+    @BindView(R.id.action_bar)
+    CustomViewGroup actionBar;
+
     @Inject
     DataManager dataManager;
     @Inject
@@ -123,7 +115,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     @Inject
     AudioAppManager audioAppManager;
 
-    AudioManager am;
     private PlaySongsN playSongs;
     private MoveDetector moveDetector;
     private boolean isPlaying;
@@ -155,7 +146,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         initVolumeControl();
 
         TimerWakeLock.acquireCpuWakeLock(this);
-        am = (AudioManager) getSystemService(AUDIO_SERVICE);
         startTimer();
         getMusicsFromStorage();
         checkPermissions();
@@ -253,7 +243,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
                 }
             }
         };
-        getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, contentObserver);
+        getContentResolver().registerContentObserver(Settings.System.CONTENT_URI, true, contentObserver);
         mSeekBar.setMax(audioAppManager.getMaxLevel());
         mSeekBar.setProgress(audioAppManager.getVolumeLevel());
         m_level = audioAppManager.getMaxLevel() / NUM_PARTS;
@@ -340,8 +330,10 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
                             NewPlayerActivity.this.getString(R.string.gps_disabled),
                             Toast.LENGTH_SHORT).show();
                 }
+
             }
             mIs_GPSEnabled = status.gpsEnabled;
+            actionBar.setGpsSignal(mIs_GPSEnabled);
             moveDetector.setGPSEnabled(mIs_GPSEnabled);
         }
         dataManager.saveStatus(status);
@@ -436,6 +428,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     private void setGpsSetting(Intent intent) {
         boolean isGPSenabled = intent.getBooleanExtra(AppConstant.FIELD_GPS, false);
         mIs_GPSEnabled = isGPSenabled;
+        actionBar.setGpsSignal(isGPSenabled);
         moveDetector.setGPSEnabled(isGPSenabled);
     }
 

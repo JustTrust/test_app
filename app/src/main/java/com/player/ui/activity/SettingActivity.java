@@ -19,6 +19,8 @@ import com.player.R;
 import com.player.model.NotificationMessage;
 import com.player.model.PhoneSettings;
 import com.player.model.Time;
+import com.player.model.UserConnectionStatus;
+import com.player.ui.views.CustomViewGroup;
 import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
 
@@ -51,6 +53,8 @@ public class SettingActivity extends BaseActivity {
     EditText edtPauseTime;
     @BindView(R.id.edt_phoneNumber)
     EditText edtPhoneNumber;
+    @BindView(R.id.action_bar)
+    CustomViewGroup actionBar;
 
     @Inject
     DataManager dataManager;
@@ -125,7 +129,7 @@ public class SettingActivity extends BaseActivity {
                 if (phoneSettings == null) {
                     phoneSettings = new PhoneSettings();
                     phoneSettings.deviceId = dataManager.getDeviceId();
-                }else{
+                } else {
                     updateUI();
                 }
             }
@@ -138,6 +142,23 @@ public class SettingActivity extends BaseActivity {
         };
         settingRef.addListenerForSingleValueEvent(settingListener);
         registerFbListener(settingRef, settingListener);
+
+        DatabaseReference statusRef = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_DEVICES).child(dataManager.getDeviceId());
+        ValueEventListener statusListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                UserConnectionStatus status = dataSnapshot.getValue(UserConnectionStatus.class);
+                if (status != null) actionBar.setGpsSignal(status.gpsEnabled);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        statusRef.addValueEventListener(statusListener);
+        registerFbListener(statusRef, statusListener);
     }
 
     private void updateUI() {
