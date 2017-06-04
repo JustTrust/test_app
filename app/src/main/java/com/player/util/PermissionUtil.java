@@ -61,11 +61,22 @@ public class PermissionUtil {
         }
     }
 
-    public static void requestCameraPermissions(Activity activity, int requestCode){
-        if (!checkAppPermissions(activity)){
+    public static void requestCameraPermissions(Activity activity, int requestCode) {
+        if (!checkAppPermissions(activity)) {
             activity.requestPermissions(new String[]{Manifest.permission.CAMERA,
                     Manifest.permission.RECORD_AUDIO,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE}, requestCode);
+        }
+    }
+
+    public static boolean checkPhonePermissions(Context context) {
+        if (ActivityCompat.checkSelfPermission(context,
+                Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(context
+                , Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
         }
     }
 

@@ -35,6 +35,7 @@ public class VerticalSeekBar extends SeekBar {
         super.setProgress(progress);
         onSizeChanged(getWidth(), getHeight(), 0, 0);
     }
+
     @Override
     protected synchronized void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(heightMeasureSpec, widthMeasureSpec);
@@ -49,7 +50,7 @@ public class VerticalSeekBar extends SeekBar {
     protected void onDraw(Canvas c) {
         c.rotate(-90);
         c.translate(-getHeight(), 0);
-        drawThumb(c);
+        //drawThumb(c);
         super.onDraw(c);
     }
 

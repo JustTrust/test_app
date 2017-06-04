@@ -7,6 +7,7 @@ import com.player.receiver.PlayerInfoChangeReceiver;
 import com.player.ui.activity.LoginActivity;
 import com.player.ui.activity.NewPlayerActivity;
 import com.player.ui.activity.PlayerActivity;
+import com.player.ui.activity.SettingActivity;
 
 import javax.inject.Singleton;
 
@@ -23,6 +24,7 @@ public interface AppComponent {
     void inject(LoginActivity mainActivity);
     void inject(PlayerActivity listActivity);
     void inject(NewPlayerActivity newPlayerActivity);
+    void inject(SettingActivity settingActivity);
     void inject(MoveDetector moveDetector);
     void inject(PlayerInfoChangeReceiver playerInfoReceiver);
     void inject(ConnectivityChangeSyncService connectivityChangeSyncService);

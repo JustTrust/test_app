@@ -1,24 +1,27 @@
-<resources
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Base application theme. -->
-    <style name="AppBaseTheme" parent="android:Theme.DeviceDefault.Light"/>
+    <style name="AppBaseTheme" parent="android:Theme.DeviceDefault.Light">
+        <item name="android:windowBackground">@drawable/bg</item>
+    </style>
 
 
-    <style name="FullScreenTheme" parent="AppBaseTheme">
+    <style name="FullScreenTheme" parent="NoTitleTheme">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <style name="NoTitleTheme" parent="AppBaseTheme">
         <item name="android:textAppearance">@style/TextAppearanceThin</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
 
     <style name="TextAppearanceThin" parent="@android:style/TextAppearance">
         <!--<item name="android:fontFamily">helvetica neue</item>-->
     </style>
 
-
-
-<!--from sample-->
+    <!--from sample-->
     <style name="Theme.Transparent" parent="android:Theme">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>

@@ -35,29 +35,9 @@ public class NotificationUtils {
     }
 
     public void showNotificationMessage(String msg) {
-        int icon = R.mipmap.ic_launcher;
         NotificationMessage playerInfo = new NotificationMessage();
         try {
-            if (!isAppOpened()) {
-                /*int mNotificationId = 100;
-
-                PendingIntent resultPendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-                NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
-                        mContext);
-                Notification notification = mBuilder.setSmallIcon(icon).setTicker("AdminMessage").setWhen(0)
-                        .setAutoCancel(true)
-                        .setContentTitle("UpdateMessageArrived")
-                        .setStyle(inboxStyle)
-                        .setContentIntent(resultPendingIntent)
-                        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-                        .setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), icon))
-                        .setContentText("MessageArrived")
-                        .build();
-
-                NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-                notificationManager.notify(mNotificationId, notification);*/
-            } else {
+            if (isAppOpened()) {
                 Intent newIntent = new Intent(mContext, NewPlayerActivity.class);
                 newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
                 newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, msg);

@@ -16,6 +16,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.player.AppConstant;
 import com.player.PlayerApplication;
 import com.player.model.Message;
+import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
 
@@ -34,6 +35,8 @@ public class PlayerInfoChangeReceiver {
     NotificationUtils notificationUtils;
     @Inject
     DataManager dataManager;
+    @Inject
+    AudioAppManager audioAppManager;
 
     public PlayerInfoChangeReceiver() {
         PlayerApplication.getAppComponent().inject(this);
@@ -51,8 +54,7 @@ public class PlayerInfoChangeReceiver {
                 if (msg == null) return;
                 Log.d(TAG, "onChildAdded: " + msg.toString());
                 if (msg.volume != null && msg.volume > -1) {
-                    AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-                    am.setStreamVolume(AudioManager.STREAM_MUSIC, msg.volume, 0);
+                    audioAppManager.setVolumeLevel(msg.volume, false);
                 } else if (!TextUtils.isEmpty(msg.msg)) {
                     notificationUtils.showNotificationMessage(msg.msg);
                 }

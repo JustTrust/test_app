@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.LocationManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.telephony.PhoneStateListener;
@@ -18,9 +19,12 @@ import android.widget.TextView;
 import com.player.R;
 import com.player.receiver.MyPhoneStateListener;
 import com.player.util.AppUtils;
+import com.player.util.PermissionUtil;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import static android.content.Context.LOCATION_SERVICE;
 
 /**
  * Created by Test-Gupta on 4/1/2017.
@@ -30,6 +34,7 @@ public class CustomViewGroup extends RelativeLayout {
 
     BroadcastReceiver timeChangeReceiver;
     BroadcastReceiver batInfoReceiver;
+    BroadcastReceiver gpsReceiver;
     MyPhoneStateListener myPhoneStateListener;
     TelephonyManager telephonyManager;
 
@@ -80,12 +85,13 @@ public class CustomViewGroup extends RelativeLayout {
         ButterKnife.bind(this, this);
         setBackgroundResource(R.drawable.header_bg);
 
-        String number = AppUtils.getMobileNumber(getContext());
-
-        if (AppUtils.isNullOrEmpty(number)) {
-            number = "N.A";
+        if (PermissionUtil.checkPhonePermissions(getContext())) {
+            String number = AppUtils.getMobileNumber(getContext());
+            mTxt_serialNumber.setText(number);
+        }else{
+            mTxt_serialNumber.setText(R.string.empty_phone);
         }
-        mTxt_serialNumber.setText(number);
+
         setCurrentTime();
         this.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
             @Override
@@ -108,6 +114,10 @@ public class CustomViewGroup extends RelativeLayout {
         if (batInfoReceiver != null) {
             getContext().unregisterReceiver(batInfoReceiver);
             batInfoReceiver = null;
+        }
+        if (gpsReceiver != null) {
+            getContext().unregisterReceiver(gpsReceiver);
+            gpsReceiver = null;
         }
 
         telephonyManager = null;
@@ -134,12 +144,23 @@ public class CustomViewGroup extends RelativeLayout {
                 setBatteryChangeLevel(level);
             }
         };
+
+        gpsReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().matches("android.location.PROVIDERS_CHANGED")) {
+                    setGpsSignal();
+                }
+            }
+        };
+
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_TIME_TICK);
         intentFilter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         intentFilter.addAction(Intent.ACTION_TIME_CHANGED);
         getContext().registerReceiver(timeChangeReceiver, intentFilter);
         getContext().registerReceiver(batInfoReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        getContext().registerReceiver(gpsReceiver, new IntentFilter(Intent.ACTION_PROVIDER_CHANGED));
     }
 
     public void setCurrentTime() {
@@ -166,8 +187,10 @@ public class CustomViewGroup extends RelativeLayout {
         mView_network_status.getBackground().setLevel(percentage * 100);
     }
 
-    public void setGpsSignal(boolean gpsOn) {
-        mView_gps_status.setVisibility(gpsOn ? View.VISIBLE : View.INVISIBLE);
+    public void setGpsSignal() {
+        LocationManager locationManager = (LocationManager) getContext().getSystemService(LOCATION_SERVICE);
+        mView_gps_status.setVisibility(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override

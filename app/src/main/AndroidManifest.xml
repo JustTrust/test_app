@@ -1,46 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.player" >
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    package="com.player">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_GPS" />
     <uses-permission android:name="android.permission.ACCESS_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.FLASHLIGHT"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
-    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_SMS" />
 
     <application
         android:name=".PlayerApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:resizeableActivity="false"
         android:supportsRtl="true"
         android:theme="@style/AppBaseTheme"
         tools:ignore="UnusedAttribute">
         <meta-data
             android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version"/>
+            android:value="@integer/google_play_services_version" />
 
-        <activity android:name=".ui.activity.PlayerActivity"
-            android:screenOrientation="portrait"
-            android:launchMode="singleTask"/>
+        <activity
+            android:name=".ui.activity.PlayerActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" />
 
-        <activity android:name=".ui.activity.LoginActivity" android:screenOrientation="portrait">
+        <activity
+            android:name=".ui.activity.SettingActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:theme="@style/FullScreenTheme"/>
+
+        <activity
+            android:name=".ui.activity.LoginActivity"
+            android:screenOrientation="landscape"
+            android:theme="@style/NoTitleTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -48,20 +62,21 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.activity.NewPlayerActivity"
+        <activity
+            android:name=".ui.activity.NewPlayerActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="landscape"
-            android:theme="@style/FullScreenTheme"
-            android:launchMode="singleTask"/>
+            android:theme="@style/FullScreenTheme" />
 
-        <service android:name=".foreground.services.ConnectivityChangeSyncService"/>
-		
-		<service android:name=".foreground.services.BackgroundVideoRecordingService" />
+        <service android:name=".foreground.services.ConnectivityChangeSyncService" />
 
-        <receiver android:name=".receiver.SongStartTimeReceiver"
+        <service android:name=".foreground.services.BackgroundVideoRecordingService" />
+
+        <receiver
+            android:name=".receiver.SongStartTimeReceiver"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.player.SONG_START" >
-                </action>
+                <action android:name="com.player.SONG_START"></action>
             </intent-filter>
         </receiver>
 
@@ -70,9 +85,10 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
+
         <meta-data
             android:name="com.google.android.gms.v2.API_KEY"
-            android:value="@string/google_api_key"/>
+            android:value="@string/google_api_key" />
     </application>
 
 </manifest>

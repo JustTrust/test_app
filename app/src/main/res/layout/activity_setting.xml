@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.activity.SettingActivity">
+
+    <com.player.ui.views.CustomViewGroup
+        android:id="@+id/action_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:background="@color/Dark_Gray"
+        android:orientation="horizontal"
+        android:padding="5dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:background="@android:color/transparent"
+            android:src="@drawable/back_button" />
+
+        <TextView
+            style="@style/SettingTitleStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:text="@string/settings" />
+
+        <ImageButton
+            android:id="@+id/btn_ok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="right"
+            android:background="@android:color/transparent"
+            android:src="@drawable/save_state" />
+    </RelativeLayout>
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="@dimen/ten_dp_margin"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="10dp"
+
+                android:layout_marginRight="10dp"
+
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txt_start"
+                    style="@style/TextTitleSettingStyle"
+                    android:layout_alignParentLeft="true"
+                    android:text="@string/start" />
+
+                <TextView
+                    android:id="@+id/txt_start_time"
+                    style="@style/TextHintSettingStyle"
+                    android:layout_alignParentRight="true"
+                    android:layout_gravity="right"
+                    android:hint="@string/start_stop_time_format" />
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_margin="@dimen/five_dp_margin"
+                android:background="@android:color/white" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="10dp"
+
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txt_stop"
+                    style="@style/TextTitleSettingStyle"
+                    android:layout_alignParentLeft="true"
+                    android:text="@string/stop" />
+
+                <TextView
+                    android:id="@+id/txt_stop_time"
+                    style="@style/TextHintSettingStyle"
+                    android:layout_alignParentRight="true"
+                    android:hint="@string/start_stop_time_format" />
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_margin="@dimen/five_dp_margin"
+                android:background="@android:color/white" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txt_play"
+                    style="@style/TextTitleSettingStyle"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:text="@string/play" />
+
+                <EditText
+                    android:id="@+id/edt_play_time"
+                    style="@style/NumericEditTextStyle"
+                    android:layout_alignParentRight="true"
+                    android:backgroundTint="@android:color/white" />
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_margin="@dimen/five_dp_margin"
+                android:background="@android:color/white" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp">
+
+                <TextView
+                    android:id="@+id/txt_pause"
+                    style="@style/TextTitleSettingStyle"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:text="@string/pause"
+                    android:textAllCaps="true" />
+
+                <EditText
+                    android:id="@+id/edt_pause_time"
+                    style="@style/NumericEditTextStyle"
+                    android:layout_alignParentRight="true"
+                    android:backgroundTint="@android:color/white" />
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_margin="@dimen/five_dp_margin"
+                android:background="@android:color/white" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp">
+
+                <TextView
+                    style="@style/TextTitleSettingStyle"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:text="@string/phoneNumber"
+                    android:textAllCaps="true" />
+
+                <EditText
+                    android:id="@+id/edt_phoneNumber"
+                    style="@style/PhoneNumericEditTextStyle"
+                    android:layout_alignParentRight="true"
+                    android:backgroundTint="@android:color/white"
+                    android:inputType="phone" />
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_margin="@dimen/five_dp_margin"
+                android:background="@android:color/white" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -5,11 +5,13 @@ import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.location.Location;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -122,17 +124,16 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     AudioAppManager audioAppManager;
 
     AudioManager am;
-    //private MusicListAdapter mAdp_music;
     private PlaySongsN playSongs;
     private MoveDetector moveDetector;
     private boolean isPlaying;
     private int remainTime;
     private int m_level;
-    private ProgressDialog progressDialog;
     private PhoneSettings phoneSettings;
     private GoogleApiClient googleApiClient;
     private CompositeSubscription compositeSubscription = new CompositeSubscription();
     private boolean progress;
+    private ContentObserver contentObserver;
     private LocationRequest locationRequest = LocationRequest.create()
             .setInterval(1600)
             .setMaxWaitTime(12000)
@@ -210,7 +211,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
 
     @OnClick(R.id.btn_settings)
     public void onSettingsClick() {
-        loadSettingsAndShowDialog();
+        startActivity(new Intent(this, SettingActivity.class));
     }
 
     @OnClick(R.id.btn_volume_up)
@@ -237,7 +238,22 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void initVolumeControl() {
+        contentObserver = new ContentObserver(new Handler()) {
+            @Override
+            public boolean deliverSelfNotifications() {
+                return false;
+            }
 
+            @Override
+            public void onChange(boolean selfChange) {
+                super.onChange(selfChange);
+                if (mSeekBar != null) {
+                    mSeekBar.setProgress(audioAppManager.getVolumeLevel());
+                    mSeekBar.invalidate();
+                }
+            }
+        };
+        getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, contentObserver);
         mSeekBar.setMax(audioAppManager.getMaxLevel());
         mSeekBar.setProgress(audioAppManager.getVolumeLevel());
         m_level = audioAppManager.getMaxLevel() / NUM_PARTS;
@@ -359,7 +375,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void initUI() {
-        progressDialog = new ProgressDialog(this);
         DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_SETTING).child(dataManager.getDeviceId());
         ValueEventListener settingListener = new ValueEventListener() {
@@ -429,6 +444,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         super.onDestroy();
         playerDestroy();
         TimerWakeLock.releaseCpuLock();
+        getContentResolver().unregisterContentObserver(contentObserver);
         compositeSubscription.clear();
     }
 
@@ -507,11 +523,9 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
                 StartTime.setAlarm(this, messageData);
                 break;
         }
-//        mTxt_songInterval.setText(String.valueOf(messageData.getSongInterval()));
-//        mTxt_pauseInterval.setText(String.valueOf(messageData.getPauseInterval()));
+
         mTxt_startTime.setText(String.format("%s - %s", messageData.getStartTime().convertString(),
                 messageData.getEndTime().convertString()));
-//        mTxt_endTime.setText(messageData.getEndTime().convertString());
     }
 
     private boolean isPlayNow(NotificationMessage data) {
@@ -533,106 +547,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             return true;
         }
         return false;
-    }
-
-    private void loadSettingsAndShowDialog() {
-        progressDialog.show();
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(dataManager.getDeviceId());
-        ValueEventListener settingListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                phoneSettings = dataSnapshot.getValue(PhoneSettings.class);
-                if (phoneSettings == null) {
-                    phoneSettings = new PhoneSettings();
-                    phoneSettings.deviceId = dataManager.getDeviceId();
-                }
-                afterSettingRequest();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                phoneSettings = new PhoneSettings();
-                phoneSettings.deviceId = dataManager.getDeviceId();
-                afterSettingRequest();
-            }
-        };
-        settingRef.addListenerForSingleValueEvent(settingListener);
-        registerFbListener(settingRef, settingListener);
-    }
-
-    private void afterSettingRequest() {
-        progressDialog.dismiss();
-        showDialog();
-    }
-
-    private void showDialog() {
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View viewRoot = LayoutInflater.from(this).inflate(R.layout.dialog_setup_time, null);
-
-        final EditText etSongInterval = (EditText) viewRoot.findViewById(R.id.edit_songInterval);
-        final TextView tvStartTime = (TextView) viewRoot.findViewById(R.id.txt_startTime);
-        final TextView tvEndTime = (TextView) viewRoot.findViewById(R.id.txt_endTime);
-        final EditText tvPauseInterval = (EditText) viewRoot.findViewById(R.id.edit_pauseInterval);
-        if (phoneSettings != null) {
-            etSongInterval.setText(phoneSettings.songInterval);
-            tvPauseInterval.setText(phoneSettings.pauseInterval);
-            tvEndTime.setText(phoneSettings.endTime);
-            tvStartTime.setText(phoneSettings.startTime);
-        }
-        tvStartTime.setOnClickListener(v -> getTime((TextView) v));
-        tvEndTime.setOnClickListener(v -> getTime((TextView) v));
-
-        builder.setView(viewRoot)
-                .setPositiveButton("set", (DialogInterface dialog, int which) -> {
-
-                    final String str_startTime = tvStartTime.getText().toString();
-                    final String str_endTime = tvEndTime.getText().toString();
-                    final String str_songInterval = etSongInterval.getText().toString();
-                    final String str_pauseInterval = tvPauseInterval.getText().toString();
-
-                    if (str_startTime.isEmpty() || str_endTime.isEmpty() || str_songInterval.isEmpty() || str_pauseInterval.isEmpty()) {
-                        Toast.makeText(NewPlayerActivity.this, R.string.empty_field, Toast.LENGTH_LONG).show();
-                    } else {
-
-                        if (phoneSettings == null) {
-                            phoneSettings = new PhoneSettings();
-                            phoneSettings.deviceId = dataManager.getDeviceId();
-                        }
-
-                        phoneSettings.endTime = str_endTime;
-                        phoneSettings.songInterval = str_songInterval;
-                        phoneSettings.pauseInterval = str_pauseInterval;
-                        phoneSettings.startTime = str_startTime;
-                        phoneSettings.deviceId = dataManager.getDeviceId();
-                        progressDialog.show();
-
-                        dataManager.saveSettings(phoneSettings);
-
-                        progressDialog.dismiss();
-                        NotificationMessage message = new NotificationMessage(false,
-                                new Time(str_startTime), new Time(str_endTime), str_songInterval, str_pauseInterval);
-                        notificationUtils.showNotificationMessage(message.getJsonObject());
-                    }
-                })
-                .setNegativeButton("cancel", (dialog, which) -> {
-                })
-                .create()
-                .show();
-    }
-
-    private void getTime(final TextView txt_time) {
-        Calendar currentTime = Calendar.getInstance();
-        int hour = currentTime.get(Calendar.HOUR_OF_DAY);
-        int minute = currentTime.get(Calendar.MINUTE);
-        TimePickerDialog mTimePicker;
-        mTimePicker = new TimePickerDialog(this,
-                (timePicker, selectedHour, selectedMinute) ->
-                        txt_time.setText(String.format("%02d:%02d", selectedHour, selectedMinute)),
-                hour, minute, true);
-        mTimePicker.setTitle("Select Time");
-        mTimePicker.show();
     }
 
     public void buildGoogleApiClient() {
