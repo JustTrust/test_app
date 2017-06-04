@@ -2,8 +2,10 @@ package com.player.di;
 
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.support.annotation.NonNull;
 
+import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.FirebaseDataManager;
 import com.player.util.NotificationUtils;
@@ -42,5 +44,11 @@ public class AppModule {
     @Singleton
     NotificationUtils provideNotificationUtils(Context context){
         return new NotificationUtils(context);
+    }
+
+    @Provides
+    @Singleton
+    AudioAppManager provideAudioManager(Context context){
+        return new AudioAppManager(context);
     }
 }

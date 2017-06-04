@@ -28,4 +28,7 @@
     <string name="end_time">End Hour</string>
     <string name="authorization_failed">Authentication failed.</string>
 
+
+    <string name="min">min</string>
+
 </resources>

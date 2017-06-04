@@ -30,13 +30,15 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/AppBaseTheme"
         tools:ignore="UnusedAttribute">
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version"/>
 
-        <activity android:name=".ui.activity.PlayerActivity" android:screenOrientation="portrait" android:launchMode="singleTask"/>
+        <activity android:name=".ui.activity.PlayerActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"/>
 
         <activity android:name=".ui.activity.LoginActivity" android:screenOrientation="portrait">
             <intent-filter>
@@ -45,6 +47,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".ui.activity.NewPlayerActivity"
+            android:screenOrientation="landscape"
+            android:theme="@style/FullScreenTheme"
+            android:launchMode="singleTask"/>
 
         <service android:name=".foreground.services.ConnectivityChangeSyncService"/>
 		

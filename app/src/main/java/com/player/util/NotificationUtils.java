@@ -8,7 +8,7 @@ import android.widget.Toast;
 import com.player.AppConstant;
 import com.player.R;
 import com.player.model.NotificationMessage;
-import com.player.ui.activity.PlayerActivity;
+import com.player.ui.activity.NewPlayerActivity;
 
 import org.json.JSONObject;
 
@@ -58,7 +58,7 @@ public class NotificationUtils {
                 NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
                 notificationManager.notify(mNotificationId, notification);*/
             } else {
-                Intent newIntent = new Intent(mContext, PlayerActivity.class);
+                Intent newIntent = new Intent(mContext, NewPlayerActivity.class);
                 newIntent.putExtra(AppConstant.INTENT_CATEGORY, AppConstant.INTENT_UPDATE);
                 newIntent.putExtra(AppConstant.FIELD_MESSAGE_DATA, msg);
                 newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -71,7 +71,7 @@ public class NotificationUtils {
     }
 
     public void showNotificationMessage(JSONObject data) {
-        Intent newIntent = new Intent(mContext, PlayerActivity.class);
+        Intent newIntent = new Intent(mContext, NewPlayerActivity.class);
         newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             if (isAppOpened()) {

@@ -16,6 +16,7 @@ import com.player.AppConstant;
 import com.player.PlayerApplication;
 import com.player.R;
 import com.player.model.UserConnectionStatus;
+import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 
 import javax.inject.Inject;
@@ -35,6 +36,8 @@ public class LoginActivity extends Activity {
 
     @Inject
     DataManager dataManager;
+    @Inject
+    AudioAppManager audioAppManager;
 
     private FirebaseAuth auth;
 
@@ -60,7 +63,7 @@ public class LoginActivity extends Activity {
     }
 
     private void goToMainActivity() {
-        startActivity(new Intent(this, PlayerActivity.class));
+        startActivity(new Intent(this, NewPlayerActivity.class));
         finish();
     }
 
@@ -75,8 +78,8 @@ public class LoginActivity extends Activity {
                             registerNewUser();
                         }
                     });
-        }else{
-            Toast.makeText(this, R.string.empty_email,Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, R.string.empty_email, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -84,7 +87,7 @@ public class LoginActivity extends Activity {
         if (mEdit_deviceName.getText().toString().isEmpty()) {
             Toast.makeText(this, getString(R.string.warning_login), Toast.LENGTH_SHORT).show();
         } else {
-            auth.createUserWithEmailAndPassword(mEdit_deviceName.getText().toString()+ AppConstant.USER_EMAIL,
+            auth.createUserWithEmailAndPassword(mEdit_deviceName.getText().toString() + AppConstant.USER_EMAIL,
                     AppConstant.USER_PASSWORD)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
@@ -101,9 +104,8 @@ public class LoginActivity extends Activity {
     }
 
     private void storeUserConnection(FirebaseUser user) {
-        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-        String volume_level = String.valueOf(am.getStreamVolume(AudioManager.STREAM_MUSIC));
-        UserConnectionStatus status = new UserConnectionStatus(user.getEmail().replace(AppConstant.USER_EMAIL, ""),volume_level);
+        String volume_level = String.valueOf(audioAppManager.getVolumeLevel());
+        UserConnectionStatus status = new UserConnectionStatus(user.getEmail().replace(AppConstant.USER_EMAIL, ""), volume_level);
         dataManager.storeUserConnection(status);
     }
 

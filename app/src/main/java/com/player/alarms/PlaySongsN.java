@@ -10,7 +10,7 @@ import android.support.annotation.NonNull;
 import com.player.AppConstant;
 import com.player.model.MusicInfo;
 import com.player.model.NotificationMessage;
-import com.player.ui.activity.PlayerActivity;
+import com.player.ui.activity.NewPlayerActivity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class PlaySongsN {
     public static final int STATUS_HARD_STOPPED = 3;
     public static final int STATUS_NONE = -1;
     private PlayListener listener;
-    private ArrayList<MusicInfo> mlst_musics = PlayerActivity.listMusics;
+    private ArrayList<MusicInfo> mlst_musics = NewPlayerActivity.listMusics;
     private NotificationMessage playerInfo = null;
     private MediaPlayer m_player;
     private int mPlayerStatus = STATUS_NONE;
@@ -76,7 +76,7 @@ public class PlaySongsN {
 
     private boolean playNext() {
         try {
-            String filePath = getFilePath(PlayerActivity.m_currentPlayingSongIndex);
+            String filePath = getFilePath(NewPlayerActivity.m_currentPlayingSongIndex);
 
             m_player.stop();
             m_player.reset();
@@ -127,7 +127,7 @@ public class PlaySongsN {
         current++;
         while (current < mlst_musics.size()) {
             if (mlst_musics.get(current).mIs_enabled) {
-                PlayerActivity.m_currentPlayingSongIndex = current;
+                NewPlayerActivity.m_currentPlayingSongIndex = current;
                 return mlst_musics.get(current).mStr_musicPath;
             }
             current++;

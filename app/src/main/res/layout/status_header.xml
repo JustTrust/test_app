@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/main_container"
+    android:layout_margin="3dp">
+
+    <TextView
+        android:id="@+id/txt_current_time"
+        style="@style/TextHeaderStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:visibility="invisible"
+            android:id="@+id/view_gps_status"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginRight="@dimen/five_dp_margin"
+            android:background="@drawable/gps_icon"
+            android:scaleType="centerInside" />
+
+        <View
+            android:id="@+id/view_network_status"
+            android:layout_width="25dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/progress_network" />
+
+        <TextView
+            android:id="@+id/txt_serialNumber"
+            style="@style/TextHeaderStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/five_dp_margin"
+            android:layout_marginRight="@dimen/five_dp_margin" />
+
+        <View
+            android:id="@+id/view_battery_status"
+            android:layout_width="28dp"
+            android:layout_height="15dp"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/progress_battery" />
+
+        <TextView
+            android:id="@+id/txt_battery_status"
+            style="@style/TextHeaderStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/five_dp_margin"
+            android:layout_marginRight="@dimen/five_dp_margin" />
+    </LinearLayout>
+</RelativeLayout>

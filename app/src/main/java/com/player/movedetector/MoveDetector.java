@@ -8,7 +8,7 @@ import android.hardware.SensorManager;
 import android.util.Log;
 
 import com.player.PlayerApplication;
-import com.player.ui.activity.PlayerActivity;
+import com.player.ui.activity.NewPlayerActivity;
 
 import javax.inject.Inject;
 
@@ -60,7 +60,7 @@ public class MoveDetector implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (mIs_GPSSetting && PlayerActivity.mIs_GPSEnabled) {
+        if (mIs_GPSSetting && NewPlayerActivity.mIs_GPSEnabled) {
             mAccelerometer = event.sensor;
             if (mAccelerometer.getType() == Sensor.TYPE_ACCELEROMETER) {
                 long currentTime = System.currentTimeMillis();
