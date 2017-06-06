@@ -2,6 +2,7 @@ package com.player.util;
 
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.support.annotation.Nullable;
 
 import com.player.R;
 
@@ -18,6 +19,7 @@ public class PlayHelper {
     private int nCount;
     private static final int MAX_COUNT = 1;
     private boolean isPaying;
+    private OnFinishListener listener;
 
     public PlayHelper(Context context, AudioAppManager audioAppManager){
         this.context = context;
@@ -51,5 +53,16 @@ public class PlayHelper {
             m_player = null;
             isPaying = false;
         }
+        if (listener != null){
+            listener.onFinishPlay();
+        }
+    }
+
+    public void setOnFinishListener(@Nullable OnFinishListener listener){
+        this.listener = listener;
+    }
+
+    public interface OnFinishListener {
+        void onFinishPlay();
     }
 }

@@ -133,6 +133,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             .setMaxWaitTime(12000)
             .setNumUpdates(1)
             .setPriority(PRIORITY_HIGH_ACCURACY);
+    private int mainVolume;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,7 +143,8 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         ButterKnife.bind(this);
         FirebaseUser currentUser = dataManager.getCurrentUser();
         if (currentUser == null) {
-            throw new IllegalStateException("User not authorized");
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
         }
         initUI();
         initMoveDetector();
@@ -234,10 +236,10 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             onVolumeDecrease();
             return true;
-        }else if(keyCode == KeyEvent.KEYCODE_VOLUME_UP){
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             onVolumeIncrease();
             return true;
         }
@@ -281,6 +283,10 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void initMoveDetector() {
+        playHelper.setOnFinishListener(() -> {
+            audioAppManager.setVolumeLevel(mainVolume);
+            playSongs.play();
+        });
         moveDetector = new MoveDetector(() -> {
             getAndSendLocation();
             starPlayMoveSound();
@@ -288,6 +294,8 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void starPlayMoveSound() {
+        mainVolume = audioAppManager.getVolumeLevel();
+        playSongs.pause();
         playHelper.play();
     }
 
@@ -463,6 +471,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         TimerWakeLock.releaseCpuLock();
         getContentResolver().unregisterContentObserver(contentObserver);
         compositeSubscription.clear();
+        playHelper.setOnFinishListener(null);
     }
 
     private void playerDestroy() {

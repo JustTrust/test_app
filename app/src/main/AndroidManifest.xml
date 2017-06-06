@@ -49,6 +49,7 @@
             android:name=".ui.activity.SettingActivity"
             android:launchMode="singleTask"
             android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize"
             android:theme="@style/FullScreenTheme"/>
 
         <activity
@@ -66,6 +67,7 @@
             android:name=".ui.activity.NewPlayerActivity"
             android:launchMode="singleTask"
             android:screenOrientation="landscape"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize"
             android:theme="@style/FullScreenTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
