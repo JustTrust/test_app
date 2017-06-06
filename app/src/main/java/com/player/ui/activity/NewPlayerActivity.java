@@ -51,6 +51,7 @@ import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
 import com.player.util.PermissionUtil;
+import com.player.util.PlayHelper;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -114,6 +115,8 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     NotificationUtils notificationUtils;
     @Inject
     AudioAppManager audioAppManager;
+    @Inject
+    PlayHelper playHelper;
 
     private PlaySongsN playSongs;
     private MoveDetector moveDetector;
@@ -266,7 +269,15 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void initMoveDetector() {
-        moveDetector = new MoveDetector(() -> getAndSendLocation());
+        moveDetector = new MoveDetector(() -> {
+            getAndSendLocation();
+            starPlayMoveSound();
+        });
+    }
+
+    private void starPlayMoveSound() {
+        playHelper.play();
+        audioAppManager.setVolumeLevel(audioAppManager.getMaxLevel());
     }
 
     private void getAndSendLocation() {

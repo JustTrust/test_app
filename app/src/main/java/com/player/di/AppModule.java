@@ -9,6 +9,7 @@ import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.FirebaseDataManager;
 import com.player.util.NotificationUtils;
+import com.player.util.PlayHelper;
 
 import javax.inject.Singleton;
 
@@ -50,5 +51,11 @@ public class AppModule {
     @Singleton
     AudioAppManager provideAudioManager(Context context){
         return new AudioAppManager(context);
+    }
+
+    @Provides
+    @Singleton
+    PlayHelper providePlayHelper(Context context){
+        return new PlayHelper(context);
     }
 }
