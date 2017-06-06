@@ -55,6 +55,7 @@ public class PlayerAppListAdapter extends BaseAdapter {
             view = inflater.inflate(R.layout.cell_player_list, null);
             holder.txt_deviceName = (TextView) view.findViewById(R.id.txt_deviceName);
             holder.txt_connStatus = (TextView) view.findViewById(R.id.txt_connStatus);
+            holder.txt_deviceId = (TextView) view.findViewById(R.id.txt_deviceId);
             holder.toggle_GPS = (ToggleButton) view.findViewById(R.id.toggle_GPS);
             view.setTag(holder);
         } else {
@@ -62,6 +63,7 @@ public class PlayerAppListAdapter extends BaseAdapter {
         }
         final UserConnectionStatus status = playersList.get(position);
         holder.txt_deviceName.setText(status.deviceName);
+        holder.txt_deviceId.setText(status.deviceID);
 
         boolean isSettingsAvailableForDevice;
 
@@ -106,5 +108,6 @@ public class PlayerAppListAdapter extends BaseAdapter {
         TextView txt_deviceName;
         TextView txt_connStatus;
         ToggleButton toggle_GPS;
+        TextView txt_deviceId;
     }
 }

@@ -4,6 +4,7 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.view.KeyEvent;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -72,6 +73,7 @@ public class SettingActivity extends BaseActivity {
         setContentView(R.layout.activity_setting);
         ButterKnife.bind(this);
         loadSettings();
+        actionBar.setDeviceId(dataManager.getDeviceId());
     }
 
     @OnClick(R.id.btn_back)
@@ -91,8 +93,17 @@ public class SettingActivity extends BaseActivity {
     }
 
     @OnClick(R.id.logout_bt)
-    void logoutBtClick(){
+    void logoutBtClick() {
         finish();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+                keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     @OnClick(R.id.btn_ok)

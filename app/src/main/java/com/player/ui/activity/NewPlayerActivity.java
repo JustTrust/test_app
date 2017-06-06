@@ -409,6 +409,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         };
         settingRef.addListenerForSingleValueEvent(settingListener);
         registerFbListener(settingRef, settingListener);
+        actionBar.setDeviceId(dataManager.getDeviceId());
     }
 
     @Override

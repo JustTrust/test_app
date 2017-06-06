@@ -5,11 +5,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.location.LocationManager;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,6 +43,9 @@ public class CustomViewGroup extends RelativeLayout {
 
     @BindView(R.id.txt_battery_status)
     TextView mTxt_battery_status;
+
+    @BindView(R.id.txt_device_id)
+    TextView mTxt_device_id;
 
     @BindView(R.id.txt_current_time)
     TextView mTxt_current_time;
@@ -172,6 +176,15 @@ public class CustomViewGroup extends RelativeLayout {
 
     public void setGpsSignal(boolean isGpsOn) {
         mView_gps_status.setVisibility(isGpsOn ? View.VISIBLE : View.INVISIBLE);
+    }
+
+    public void setDeviceId(@Nullable String deviceId){
+        if (TextUtils.isEmpty(deviceId)){
+            mTxt_device_id.setVisibility(View.INVISIBLE);
+        }else{
+            mTxt_device_id.setText(String.format("%s : %s", getContext().getString(R.string.id_text), deviceId));
+            mTxt_device_id.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
