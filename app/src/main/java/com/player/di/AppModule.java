@@ -55,7 +55,7 @@ public class AppModule {
 
     @Provides
     @Singleton
-    PlayHelper providePlayHelper(Context context){
-        return new PlayHelper(context);
+    PlayHelper providePlayHelper(Context context, AudioAppManager audioAppManager){
+        return new PlayHelper(context, audioAppManager);
     }
 }

@@ -14,6 +14,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -86,7 +87,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     public static int m_currentPlayingSongIndex = 0;
     public static ArrayList<MusicInfo> listMusics = new ArrayList<>();
     public String songName = "";
-    private static final int NUM_PARTS = 10;
 
     @BindView(R.id.txt_start_end_time)
     TextView mTxt_startTime;
@@ -122,7 +122,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     private MoveDetector moveDetector;
     private boolean isPlaying;
     private int remainTime;
-    private int m_level;
+    private int m_level = 1;
     private PhoneSettings phoneSettings;
     private GoogleApiClient googleApiClient;
     private CompositeSubscription compositeSubscription = new CompositeSubscription();
@@ -231,6 +231,19 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         }
     }
 
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+            onVolumeDecrease();
+            return true;
+        }else if(keyCode == KeyEvent.KEYCODE_VOLUME_UP){
+            onVolumeIncrease();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
     private void initVolumeControl() {
         contentObserver = new ContentObserver(new Handler()) {
             @Override
@@ -250,7 +263,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         getContentResolver().registerContentObserver(Settings.System.CONTENT_URI, true, contentObserver);
         mSeekBar.setMax(audioAppManager.getMaxLevel());
         mSeekBar.setProgress(audioAppManager.getVolumeLevel());
-        m_level = audioAppManager.getMaxLevel() / NUM_PARTS;
 
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -277,7 +289,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
 
     private void starPlayMoveSound() {
         playHelper.play();
-        audioAppManager.setVolumeLevel(audioAppManager.getMaxLevel());
     }
 
     private void getAndSendLocation() {

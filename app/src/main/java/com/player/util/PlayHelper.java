@@ -12,14 +12,16 @@ import com.player.R;
 
 public class PlayHelper {
 
-    Context context;
+    private Context context;
+    private AudioAppManager audioAppManager;
     private MediaPlayer m_player = null;
     private int nCount;
     private static final int MAX_COUNT = 1;
     private boolean isPaying;
 
-    public PlayHelper(Context context){
+    public PlayHelper(Context context, AudioAppManager audioAppManager){
         this.context = context;
+        this.audioAppManager = audioAppManager;
     }
 
 
@@ -37,8 +39,8 @@ public class PlayHelper {
                 stop();
             }
         });
-
         m_player.start();
+        audioAppManager.setVolumeLevel(audioAppManager.getMaxLevel());
     }
 
     public void stop(){
