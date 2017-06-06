@@ -1,8 +1,10 @@
 package com.player.ui.activity;
 
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -51,8 +53,8 @@ public class SettingActivity extends BaseActivity {
     EditText edtPlayTime;
     @BindView(R.id.edt_pause_time)
     EditText edtPauseTime;
-    @BindView(R.id.edt_phoneNumber)
-    EditText edtPhoneNumber;
+    @BindView(R.id.logout_bt)
+    Button logoutBt;
     @BindView(R.id.action_bar)
     CustomViewGroup actionBar;
 
@@ -74,6 +76,7 @@ public class SettingActivity extends BaseActivity {
 
     @OnClick(R.id.btn_back)
     public void onBackButton() {
+        startActivity(new Intent(this, NewPlayerActivity.class));
         finish();
     }
 
@@ -87,13 +90,17 @@ public class SettingActivity extends BaseActivity {
         getTime(txtStopTime);
     }
 
+    @OnClick(R.id.logout_bt)
+    void logoutBtClick(){
+        finish();
+    }
+
     @OnClick(R.id.btn_ok)
     public void onOkClick() {
         String start = txtStartTime.getText().toString().trim();
         String end = txtStopTime.getText().toString().trim();
         String play = edtPlayTime.getText().toString().trim();
         String pause = edtPauseTime.getText().toString().trim();
-        String phoneNumber = edtPhoneNumber.getText().toString().trim();
 
         if (start.isEmpty() || end.isEmpty() || play.isEmpty() || pause.isEmpty()) {
             Toast.makeText(this, R.string.empty_field, Toast.LENGTH_LONG).show();

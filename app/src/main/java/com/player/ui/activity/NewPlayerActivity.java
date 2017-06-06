@@ -202,6 +202,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     @OnClick(R.id.btn_settings)
     public void onSettingsClick() {
         startActivity(new Intent(this, SettingActivity.class));
+        finish();
     }
 
     @OnClick(R.id.btn_volume_up)

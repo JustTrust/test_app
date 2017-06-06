@@ -181,19 +181,12 @@
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp">
 
-                <TextView
-                    style="@style/TextTitleSettingStyle"
-                    android:layout_alignParentLeft="true"
-                    android:layout_centerVertical="true"
-                    android:text="@string/phoneNumber"
-                    android:textAllCaps="true" />
-
-                <EditText
-                    android:id="@+id/edt_phoneNumber"
-                    style="@style/PhoneNumericEditTextStyle"
+                <Button
+                    android:id="@+id/logout_bt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_alignParentEnd="true"
-                    android:backgroundTint="@android:color/white"
-                    android:inputType="phone" />
+                    android:text="@string/logout"/>
             </RelativeLayout>
 
             <View
