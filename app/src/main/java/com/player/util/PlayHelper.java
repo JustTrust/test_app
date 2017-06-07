@@ -20,6 +20,7 @@ public class PlayHelper {
     private static final int MAX_COUNT = 1;
     private boolean isPaying;
     private OnFinishListener listener;
+    private int mainVolume;
 
     public PlayHelper(Context context, AudioAppManager audioAppManager){
         this.context = context;
@@ -29,6 +30,7 @@ public class PlayHelper {
 
     public synchronized void play() {
         if (isPaying) return;
+        mainVolume = audioAppManager.getVolumeLevel();
         isPaying = true;
         nCount = 0;
         m_player = MediaPlayer.create(context, R.raw.test);
@@ -56,6 +58,7 @@ public class PlayHelper {
         if (listener != null){
             listener.onFinishPlay();
         }
+        audioAppManager.setVolumeLevel(mainVolume);
     }
 
     public void setOnFinishListener(@Nullable OnFinishListener listener){

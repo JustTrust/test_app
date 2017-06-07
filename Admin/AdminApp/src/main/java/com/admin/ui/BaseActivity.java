@@ -18,7 +18,11 @@ public class BaseActivity extends AppCompatActivity {
 
     ArrayList<Pair<DatabaseReference, Object>> fbListeners = new ArrayList<>();
 
-    protected void registerFbListener(DatabaseReference reference, Object listener) {
+    protected void registerFbListener(DatabaseReference reference, ChildEventListener listener) {
+        fbListeners.add(new Pair<>(reference, listener));
+    }
+
+    protected void registerFbListener(DatabaseReference reference, ValueEventListener listener) {
         fbListeners.add(new Pair<>(reference, listener));
     }
 

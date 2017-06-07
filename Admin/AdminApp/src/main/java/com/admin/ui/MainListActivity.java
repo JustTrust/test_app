@@ -75,16 +75,16 @@ public class MainListActivity extends BaseActivity {
         setContentView(R.layout.main_list_activity);
         ButterKnife.bind(this);
         AdminApplication.getAppComponent().inject(this);
-        try {
-            ViewConfiguration config = ViewConfiguration.get(this);
-            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if (menuKeyField != null) {
-                menuKeyField.setAccessible(true);
-                menuKeyField.setBoolean(config, false);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+//        try {
+//            ViewConfiguration config = ViewConfiguration.get(this);
+//            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+//            if (menuKeyField != null) {
+//                menuKeyField.setAccessible(true);
+//                menuKeyField.setBoolean(config, false);
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
 
         pDialog = new ProgressDialog(MainListActivity.this);
         pDialog.setMessage("Processing...");
@@ -181,21 +181,6 @@ public class MainListActivity extends BaseActivity {
     void onImgClick() {
         Intent map_intent = new Intent(MainListActivity.this, MapsActivity.class);
         startActivity(map_intent);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_setup_time) {
-            showDialog();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     private void showDialog() {

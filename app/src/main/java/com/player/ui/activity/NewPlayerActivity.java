@@ -133,7 +133,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             .setMaxWaitTime(12000)
             .setNumUpdates(1)
             .setPriority(PRIORITY_HIGH_ACCURACY);
-    private int mainVolume;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,15 +144,15 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         if (currentUser == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
+        } else {
+            initUI();
+            initMoveDetector();
+            initVolumeControl();
+            TimerWakeLock.acquireCpuWakeLock(this);
+            startTimer();
+            getMusicsFromStorage();
+            checkPermissions();
         }
-        initUI();
-        initMoveDetector();
-        initVolumeControl();
-
-        TimerWakeLock.acquireCpuWakeLock(this);
-        startTimer();
-        getMusicsFromStorage();
-        checkPermissions();
     }
 
     private void checkPermissions() {
@@ -233,7 +232,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         }
     }
 
-
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
@@ -284,7 +282,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
 
     private void initMoveDetector() {
         playHelper.setOnFinishListener(() -> {
-            audioAppManager.setVolumeLevel(mainVolume);
             playSongs.play();
         });
         moveDetector = new MoveDetector(() -> {
@@ -294,7 +291,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void starPlayMoveSound() {
-        mainVolume = audioAppManager.getVolumeLevel();
         playSongs.pause();
         playHelper.play();
     }
@@ -469,9 +465,9 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         super.onDestroy();
         playerDestroy();
         TimerWakeLock.releaseCpuLock();
-        getContentResolver().unregisterContentObserver(contentObserver);
+        if (contentObserver != null) getContentResolver().unregisterContentObserver(contentObserver);
         compositeSubscription.clear();
-        playHelper.setOnFinishListener(null);
+        if (playHelper != null) playHelper.setOnFinishListener(null);
     }
 
     private void playerDestroy() {
