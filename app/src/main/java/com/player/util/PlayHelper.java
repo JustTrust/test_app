@@ -13,55 +13,52 @@ import com.player.R;
 
 public class PlayHelper {
 
+    private static final int MAX_COUNT = 1;
     private Context context;
     private AudioAppManager audioAppManager;
     private MediaPlayer m_player = null;
     private int nCount;
-    private static final int MAX_COUNT = 1;
     private boolean isPaying;
     private OnFinishListener listener;
-    private int mainVolume;
 
-    public PlayHelper(Context context, AudioAppManager audioAppManager){
+
+    public PlayHelper(Context context, AudioAppManager audioAppManager) {
         this.context = context;
         this.audioAppManager = audioAppManager;
     }
 
-
     public synchronized void play() {
         if (isPaying) return;
-        mainVolume = audioAppManager.getVolumeLevel();
         isPaying = true;
         nCount = 0;
         m_player = MediaPlayer.create(context, R.raw.test);
+        m_player.setVolume(15, 15);
         m_player.setOnCompletionListener(mp -> {
             if (nCount < MAX_COUNT && m_player != null) {
                 m_player.seekTo(0);
                 m_player.start();
                 nCount += 1;
-            }else {
+            } else {
                 stop();
             }
         });
         m_player.start();
-        audioAppManager.setVolumeLevel(audioAppManager.getMaxLevel());
     }
 
-    public void stop(){
-        if(m_player!= null){
+    public void stop() {
+        if (m_player != null) {
             m_player.stop();
             m_player.release();
             m_player.setOnCompletionListener(null);
             m_player = null;
             isPaying = false;
         }
-        if (listener != null){
+        if (listener != null) {
             listener.onFinishPlay();
         }
-        audioAppManager.setVolumeLevel(mainVolume);
     }
 
-    public void setOnFinishListener(@Nullable OnFinishListener listener){
+    public void setOnFinishListener(@Nullable OnFinishListener listener) {
         this.listener = listener;
     }
 

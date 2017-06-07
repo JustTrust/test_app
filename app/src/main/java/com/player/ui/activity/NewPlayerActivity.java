@@ -282,7 +282,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
 
     private void initMoveDetector() {
         playHelper.setOnFinishListener(() -> {
-            playSongs.play();
+            if (playSongs != null) playSongs.unMute();
         });
         moveDetector = new MoveDetector(() -> {
             getAndSendLocation();
@@ -291,7 +291,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void starPlayMoveSound() {
-        if (playSongs != null) playSongs.pause();
+        if (playSongs != null) playSongs.mute();
         playHelper.play();
     }
 

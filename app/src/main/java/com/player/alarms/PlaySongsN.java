@@ -8,13 +8,17 @@ import android.media.MediaPlayer;
 import android.support.annotation.NonNull;
 
 import com.player.AppConstant;
+import com.player.PlayerApplication;
 import com.player.model.MusicInfo;
 import com.player.model.NotificationMessage;
 import com.player.ui.activity.NewPlayerActivity;
+import com.player.util.AudioAppManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+
+import javax.inject.Inject;
 
 
 public class PlaySongsN {
@@ -23,6 +27,8 @@ public class PlaySongsN {
     public static final int STATUS_STOPPED = 2;
     public static final int STATUS_HARD_STOPPED = 3;
     public static final int STATUS_NONE = -1;
+    @Inject
+    AudioAppManager audioAppManager;
     private PlayListener listener;
     private ArrayList<MusicInfo> mlst_musics = NewPlayerActivity.listMusics;
     private NotificationMessage playerInfo = null;
@@ -30,12 +36,13 @@ public class PlaySongsN {
     private int mPlayerStatus = STATUS_NONE;
     private int minuteStartTime;
     private int minuteEndTime;
-
+    private int mainVolume;
     private int pauseCounter = 0;
     private int playCounter = 0;
 
     public PlaySongsN(@NonNull PlayListener listener) {
         this.listener = listener;
+        PlayerApplication.getAppComponent().inject(this);
     }
 
     /**
@@ -97,6 +104,19 @@ public class PlaySongsN {
         m_player.pause();
     }
 
+    public void mute() {
+        if (m_player != null) {
+            mainVolume = audioAppManager.getVolumeLevel();
+            m_player.setVolume(0, 0);
+        }
+    }
+
+    public void unMute() {
+        if (m_player != null) {
+            m_player.setVolume(mainVolume, mainVolume);
+        }
+    }
+
     private void stop() {
         mPlayerStatus = STATUS_STOPPED;
         m_player.pause();
@@ -111,8 +131,8 @@ public class PlaySongsN {
      * @desc : Destroy PlaySong object instance
      */
     public void onDestroy() {
-        if (listener != null){
-            listener.updatePlayStatus(STATUS_HARD_STOPPED,0);
+        if (listener != null) {
+            listener.updatePlayStatus(STATUS_HARD_STOPPED, 0);
         }
         mPlayerStatus = STATUS_HARD_STOPPED;
         m_player.stop();
@@ -178,7 +198,7 @@ public class PlaySongsN {
         if (isEndTimeReached()) {
             stop();
         }
-        if (listener != null){
+        if (listener != null) {
             listener.updatePlayStatus(mPlayerStatus, counter);
         }
     }
@@ -221,7 +241,7 @@ public class PlaySongsN {
         return false;
     }
 
-    public interface PlayListener{
+    public interface PlayListener {
         void updatePlayStatus(int status, int remainTime);
     }
 
