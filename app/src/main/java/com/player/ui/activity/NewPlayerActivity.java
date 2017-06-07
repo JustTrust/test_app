@@ -291,7 +291,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void starPlayMoveSound() {
-        playSongs.pause();
+        if (playSongs != null) playSongs.pause();
         playHelper.play();
     }
 
@@ -465,9 +465,16 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         super.onDestroy();
         playerDestroy();
         TimerWakeLock.releaseCpuLock();
-        if (contentObserver != null) getContentResolver().unregisterContentObserver(contentObserver);
+        if (contentObserver != null)
+            getContentResolver().unregisterContentObserver(contentObserver);
         compositeSubscription.clear();
-        if (playHelper != null) playHelper.setOnFinishListener(null);
+        if (playHelper != null) {
+            playHelper.setOnFinishListener(null);
+            playHelper.stop();
+        }
+        if (moveDetector != null){
+            moveDetector.setListener(null);
+        }
     }
 
     private void playerDestroy() {
@@ -495,6 +502,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     public void updateStatus(final int status, final int remainTime) {
+        setRemainTime(remainTime);
         if (status != PlaySongsN.STATUS_PLAYING) {
             setAppStatus(AppConstant.PAUSE);
             setSongName("--");
@@ -508,7 +516,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             mTxt_appStatus.setTextColor(ContextCompat.getColor(this, R.color.play_text_color));
             mTxt_remainTime.setTextColor(ContextCompat.getColor(this, R.color.play_text_color));
         }
-        setRemainTime(remainTime);
     }
 
     private void setPlayerInfo(Intent intent) {

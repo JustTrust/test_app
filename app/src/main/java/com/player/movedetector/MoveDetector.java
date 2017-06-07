@@ -5,6 +5,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.player.PlayerApplication;
@@ -56,6 +57,10 @@ public class MoveDetector implements SensorEventListener {
 
     public void setGPSEnabled(boolean isEnabled) {
         mIs_GPSSetting = isEnabled;
+    }
+
+    public void setListener(@Nullable SendLocationListener listener){
+        this.listener = listener;
     }
 
     @Override

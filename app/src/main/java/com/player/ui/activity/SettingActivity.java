@@ -133,6 +133,7 @@ public class SettingActivity extends BaseActivity {
             NotificationMessage message = new NotificationMessage(false,
                     new Time(start), new Time(end), play, pause);
             notificationUtils.showNotificationMessage(message.getJsonObject());
+            finish();
         }
 
     }
