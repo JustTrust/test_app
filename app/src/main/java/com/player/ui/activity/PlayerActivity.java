@@ -77,6 +77,7 @@ import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCU
 /**
  * @desc PlayerActivity for player interface
  */
+@Deprecated
 public class PlayerActivity extends BaseActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
 

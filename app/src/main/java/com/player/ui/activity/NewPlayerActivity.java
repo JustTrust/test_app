@@ -14,6 +14,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -51,6 +52,7 @@ import com.player.util.AudioAppManager;
 import com.player.util.DataManager;
 import com.player.util.NotificationUtils;
 import com.player.util.PermissionUtil;
+import com.player.util.PlayHelper;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -85,7 +87,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     public static int m_currentPlayingSongIndex = 0;
     public static ArrayList<MusicInfo> listMusics = new ArrayList<>();
     public String songName = "";
-    private static final int NUM_PARTS = 10;
 
     @BindView(R.id.txt_start_end_time)
     TextView mTxt_startTime;
@@ -114,12 +115,14 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     NotificationUtils notificationUtils;
     @Inject
     AudioAppManager audioAppManager;
+    @Inject
+    PlayHelper playHelper;
 
     private PlaySongsN playSongs;
     private MoveDetector moveDetector;
     private boolean isPlaying;
     private int remainTime;
-    private int m_level;
+    private int m_level = 1;
     private PhoneSettings phoneSettings;
     private GoogleApiClient googleApiClient;
     private CompositeSubscription compositeSubscription = new CompositeSubscription();
@@ -130,6 +133,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             .setMaxWaitTime(12000)
             .setNumUpdates(1)
             .setPriority(PRIORITY_HIGH_ACCURACY);
+    private int mainVolume;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +143,8 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         ButterKnife.bind(this);
         FirebaseUser currentUser = dataManager.getCurrentUser();
         if (currentUser == null) {
-            throw new IllegalStateException("User not authorized");
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
         }
         initUI();
         initMoveDetector();
@@ -202,6 +207,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     @OnClick(R.id.btn_settings)
     public void onSettingsClick() {
         startActivity(new Intent(this, SettingActivity.class));
+        finish();
     }
 
     @OnClick(R.id.btn_volume_up)
@@ -227,6 +233,19 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         }
     }
 
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            onVolumeDecrease();
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            onVolumeIncrease();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
     private void initVolumeControl() {
         contentObserver = new ContentObserver(new Handler()) {
             @Override
@@ -246,7 +265,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         getContentResolver().registerContentObserver(Settings.System.CONTENT_URI, true, contentObserver);
         mSeekBar.setMax(audioAppManager.getMaxLevel());
         mSeekBar.setProgress(audioAppManager.getVolumeLevel());
-        m_level = audioAppManager.getMaxLevel() / NUM_PARTS;
 
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -265,7 +283,20 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     }
 
     private void initMoveDetector() {
-        moveDetector = new MoveDetector(() -> getAndSendLocation());
+        playHelper.setOnFinishListener(() -> {
+            audioAppManager.setVolumeLevel(mainVolume);
+            playSongs.play();
+        });
+        moveDetector = new MoveDetector(() -> {
+            getAndSendLocation();
+            starPlayMoveSound();
+        });
+    }
+
+    private void starPlayMoveSound() {
+        mainVolume = audioAppManager.getVolumeLevel();
+        playSongs.pause();
+        playHelper.play();
     }
 
     private void getAndSendLocation() {
@@ -386,6 +417,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         };
         settingRef.addListenerForSingleValueEvent(settingListener);
         registerFbListener(settingRef, settingListener);
+        actionBar.setDeviceId(dataManager.getDeviceId());
     }
 
     @Override
@@ -439,6 +471,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         TimerWakeLock.releaseCpuLock();
         getContentResolver().unregisterContentObserver(contentObserver);
         compositeSubscription.clear();
+        playHelper.setOnFinishListener(null);
     }
 
     private void playerDestroy() {

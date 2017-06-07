@@ -92,7 +92,7 @@ public class PlaySongsN {
         }
     }
 
-    private void pause() {
+    public void pause() {
         mPlayerStatus = STATUS_PAUSE;
         m_player.pause();
     }

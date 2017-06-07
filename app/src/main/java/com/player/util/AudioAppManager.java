@@ -9,8 +9,11 @@ import android.media.AudioManager;
  */
 
 public class AudioAppManager {
+
+    private static final int VOL_DIF = 6;
     private Context context;
     private AudioManager m_AudioManager;
+    private int maxVol;
 
     public AudioAppManager(Context context) {
         this.context = context;
@@ -19,10 +22,11 @@ public class AudioAppManager {
 
     private void init() {
         m_AudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        maxVol = m_AudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) - VOL_DIF;
     }
 
     public int getMaxLevel() {
-        return m_AudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        return maxVol;
     }
 
     public void setVolumeLevelInPercent(int percentage) {
@@ -30,21 +34,16 @@ public class AudioAppManager {
         setVolumeLevel(volume, true);
     }
 
-    public void setVolumeLevel(int volume) {
-        setVolumeLevel(volume, true);
-    }
-
     public void setVolumeLevel(int volume, boolean postEvent) {
 
-        if(volume > getMaxLevel()) {
+        if (volume < 0) {
+            volume = 0;
+        } else if (volume > getMaxLevel()) {
             volume = getMaxLevel();
         }
-        else if (volume < 0) {
-            volume = 0;
-        }
 
-        m_AudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
-                volume, 0);
+        if (volume != 0) volume += VOL_DIF;
+        m_AudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
     }
 
     public int getVolumeLevelInPercentage() {
@@ -52,6 +51,11 @@ public class AudioAppManager {
     }
 
     public int getVolumeLevel() {
-        return m_AudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        return m_AudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0 ?
+                0 :  m_AudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) - VOL_DIF;
+    }
+
+    public void setVolumeLevel(int volume) {
+        setVolumeLevel(volume, true);
     }
 }
