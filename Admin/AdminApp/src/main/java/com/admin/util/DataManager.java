@@ -16,7 +16,9 @@ public interface DataManager {
 
     void sendVolumePushNotification(int volume, String deviceId);
 
-    void setGpsStatus(String deviceID, Boolean isChecked);
+    void setGpsStatus(String deviceID, boolean isChecked);
 
     void clearMessages();
+
+    void setHoldStatus(String deviceID, boolean hold);
 }

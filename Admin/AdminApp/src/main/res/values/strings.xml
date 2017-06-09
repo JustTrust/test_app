@@ -7,6 +7,8 @@
     <string name="start_time">Start Hour</string>
     <string name="end_time">End Hour</string>
     <string name="update">Update</string>
+    <string name="hold">Hold</string>
+    <string name="resume">Resume</string>
     <string name="notification">Notification</string>
     <string name="player_status">Player Status:</string>
     <string name="song_number">Song number:</string>

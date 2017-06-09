@@ -50,10 +50,13 @@ public class FirebaseDataManager implements DataManager{
 
     @Override
     public void saveSettings(PhoneSettings phoneSettings) {
-        DatabaseReference settingRef = FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(deviceId);
-        phoneSettings.deviceId = deviceId;
-        settingRef.setValue(phoneSettings);
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId);
+        ref.child("deviceId").setValue(deviceId);
+        ref.child("startTime").setValue(phoneSettings.startTime);
+        ref.child("endTime").setValue(phoneSettings.endTime);
+        ref.child("songInterval").setValue(phoneSettings.songInterval);
+        ref.child("pauseInterval").setValue(phoneSettings.pauseInterval);
     }
 
     @Override

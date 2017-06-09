@@ -38,10 +38,10 @@
 
         <Button
             android:id="@+id/video"
-            android:layout_marginStart="32dp"
-            android:layout_marginEnd="32dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="32dp"
+            android:layout_marginStart="32dp"
             android:layout_weight="1"
             android:text="@string/video" />
 
@@ -157,13 +157,34 @@
                 android:textSize="20sp" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_update"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:text="@string/update"
-            android:textSize="20sp" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:id="@+id/btn_update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                android:text="@string/update"
+                android:textSize="20sp"
+                android:layout_toStartOf="@+id/center_view"/>
+
+            <View
+                android:id="@+id/center_view"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_centerInParent="true"/>
+
+            <Button
+                android:id="@+id/btn_hold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                android:text="@string/hold"
+                android:layout_toEndOf="@+id/center_view"
+                android:textSize="20sp" />
+        </RelativeLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

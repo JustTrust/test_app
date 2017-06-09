@@ -73,6 +73,7 @@ public class LoginActivity extends Activity {
                     AppConstant.USER_PASSWORD)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
+                            storeUserConnection(dataManager.getCurrentUser());
                             goToMainActivity();
                         } else {
                             registerNewUser();

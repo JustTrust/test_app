@@ -7,6 +7,7 @@ public class PhoneSettings {
     public String songInterval;
     public String pauseInterval;
     public String deviceId;
+    public boolean onHold;
 
     public PhoneSettings() {
     }

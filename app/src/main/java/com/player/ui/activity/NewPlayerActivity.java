@@ -121,6 +121,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
     private PlaySongsN playSongs;
     private MoveDetector moveDetector;
     private boolean isPlaying;
+    private boolean onHold = false;
     private int remainTime;
     private int m_level = 1;
     private PhoneSettings phoneSettings;
@@ -176,10 +177,15 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(aLong -> {
-                    if (playSongs != null) {
+                    if (playSongs != null & !onHold) {
                         playSongs.checkPlayStatus();
                     }
                     setSendingConnSetting();
+                    if (onHold) {
+                        if (isPlaying) playSongs.hold();
+                    } else {
+                        if (isPlaying) playSongs.unHold();
+                    }
                 }));
     }
 
@@ -400,6 +406,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             public void onDataChange(DataSnapshot dataSnapshot) {
                 phoneSettings = dataSnapshot.getValue(PhoneSettings.class);
                 if (phoneSettings != null) {
+                    onHold = phoneSettings.onHold;
                     NotificationMessage message = new NotificationMessage(false, new Time(phoneSettings.startTime),
                             new Time(phoneSettings.endTime), phoneSettings.songInterval, phoneSettings.pauseInterval);
                     notificationUtils.showNotificationMessage(message.getJsonObject());
@@ -413,6 +420,27 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         settingRef.addListenerForSingleValueEvent(settingListener);
         registerFbListener(settingRef, settingListener);
         actionBar.setDeviceId(dataManager.getDeviceId());
+
+        DatabaseReference holdRef = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(dataManager.getDeviceId()).child("onHold");
+        ValueEventListener holdListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Boolean onHoldValue = dataSnapshot.getValue(Boolean.class);
+                if (onHoldValue != null) {
+                    onHold = onHoldValue;
+                } else {
+                    onHold = false;
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        };
+        holdRef.addValueEventListener(holdListener);
+        registerFbListener(holdRef, holdListener);
+
     }
 
     @Override
@@ -471,7 +499,7 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
             playHelper.setOnFinishListener(null);
             playHelper.stop();
         }
-        if (moveDetector != null){
+        if (moveDetector != null) {
             moveDetector.setListener(null);
         }
     }
@@ -491,13 +519,14 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         if (playSongs == null) {
             playSongs = new PlaySongsN((status, remainTime) -> updateStatus(status, remainTime));
             playSongs.onStartCommand(playerInfo);
-            if (playSongs.play()) {
-                setSongName(playSongs.getFileName(m_currentPlayingSongIndex));
-                songName = (m_currentPlayingSongIndex + 1) + ". " + playSongs.getFileName(m_currentPlayingSongIndex);
-            }
+                if (playSongs.play()) {
+                    setSongName(playSongs.getFileName(m_currentPlayingSongIndex));
+                    songName = (m_currentPlayingSongIndex + 1) + ". " + playSongs.getFileName(m_currentPlayingSongIndex);
+                }
         } else {
             playSongs.resume();
         }
+        if (onHold) playSongs.hold();
     }
 
     public void updateStatus(final int status, final int remainTime) {

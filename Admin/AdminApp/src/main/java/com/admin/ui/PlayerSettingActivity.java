@@ -1,13 +1,11 @@
 package com.admin.ui;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.TimePickerDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -28,7 +26,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -60,6 +57,8 @@ public class PlayerSettingActivity extends BaseActivity {
     TextView mTxt_endTimepicker;
     @BindView(R.id.btn_update)
     Button mBtn_update;
+    @BindView(R.id.btn_hold)
+    Button mBtn_hold;
     @BindView(R.id.video)
     Button mBtn_video;
     @BindView(R.id.txt_connectStatus)
@@ -121,6 +120,13 @@ public class PlayerSettingActivity extends BaseActivity {
                 new Intent(PlayerSettingActivity.this, VideoActivity.class)
                         .putExtra(AppConstant.FIELD_DEVICE_ID, mStr_DeviceID)));
 
+        mBtn_hold.setOnClickListener(v -> {
+            dataManager.setHoldStatus(mStr_DeviceID, mBtn_hold.getText().toString().equals(getString(R.string.hold)));
+            mBtn_hold.setText(mBtn_hold.getText().toString().equals(getString(R.string.hold))
+                    ? getString(R.string.resume) : getString(R.string.hold));
+        }
+        );
+
         mTimer = new Timer();
         mDurationTask = new CheckStatusTask();
         mTimer.schedule(mDurationTask, 0, 1000);
@@ -136,6 +142,7 @@ public class PlayerSettingActivity extends BaseActivity {
                     mTxt_endTimepicker.setText(deviceSettings.endTime);
                     mEdit_songInterval.setText(deviceSettings.songInterval);
                     mEdit_pauseInterval.setText(deviceSettings.pauseInterval);
+                    mBtn_hold.setText(deviceSettings.onHold ? getString(R.string.resume) : getString(R.string.hold));
                 }
             }
 
@@ -208,7 +215,8 @@ public class PlayerSettingActivity extends BaseActivity {
             mTxt_remain.setText(String.format("%02d:%02d",
                     TimeUnit.SECONDS.toMinutes(remainTime),
                     remainTime - TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(remainTime))
-            ));        }
+            ));
+        }
 
         if (differ < AppConstant.CONNECTION_CHECK_TIME) {
 

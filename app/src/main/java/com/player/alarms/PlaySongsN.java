@@ -104,6 +104,14 @@ public class PlaySongsN {
         m_player.pause();
     }
 
+    public void hold() {
+        m_player.pause();
+    }
+
+   public void unHold() {
+       m_player.start();
+    }
+
     public void mute() {
         if (m_player != null) {
             mainVolume = audioAppManager.getVolumeLevel();

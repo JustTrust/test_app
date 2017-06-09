@@ -6,6 +6,7 @@ import com.admin.AppConstant;
 import com.admin.model.Message;
 import com.admin.model.NotificationMessage;
 import com.admin.model.PhoneSettings;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 /**
@@ -13,7 +14,7 @@ import com.google.firebase.database.FirebaseDatabase;
  * mail to a.belichenko@gmail.com
  */
 
-public class FireBaseDataManager implements DataManager{
+public class FireBaseDataManager implements DataManager {
     private Context context;
 
     public FireBaseDataManager(Context context) {
@@ -22,9 +23,12 @@ public class FireBaseDataManager implements DataManager{
 
     @Override
     public void saveSettings(PhoneSettings phoneSettings) {
-        FirebaseDatabase.getInstance().getReference()
-                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId)
-                .setValue(phoneSettings);
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(phoneSettings.deviceId);
+        ref.child("startTime").setValue(phoneSettings.startTime);
+        ref.child("endTime").setValue(phoneSettings.endTime);
+        ref.child("songInterval").setValue(phoneSettings.songInterval);
+        ref.child("pauseInterval").setValue(phoneSettings.pauseInterval);
     }
 
     @Override
@@ -41,7 +45,7 @@ public class FireBaseDataManager implements DataManager{
     }
 
     @Override
-    public void setGpsStatus(String deviceID, Boolean isChecked) {
+    public void setGpsStatus(String deviceID, boolean isChecked) {
         FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_DEVICES).child(deviceID)
                 .child("gpsEnabled")
@@ -53,5 +57,13 @@ public class FireBaseDataManager implements DataManager{
         FirebaseDatabase.getInstance().getReference()
                 .child(AppConstant.NODE_ADMIN_MESSAGES)
                 .removeValue();
+    }
+
+    @Override
+    public void setHoldStatus(String deviceID, boolean hold) {
+        FirebaseDatabase.getInstance().getReference()
+                .child(AppConstant.NODE_SETTING).child(deviceID)
+                .child("onHold")
+                .setValue(hold);
     }
 }
