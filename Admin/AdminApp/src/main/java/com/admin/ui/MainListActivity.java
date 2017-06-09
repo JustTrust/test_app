@@ -48,10 +48,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-
 /**
  * @desc MainListActivity for list of register player device
  */
+
 public class MainListActivity extends BaseActivity {
 
     @BindView(R.id.imgLeft)
@@ -65,7 +65,6 @@ public class MainListActivity extends BaseActivity {
 
     @Inject
     DataManager dataManager;
-    private ProgressDialog pDialog;
     private PlayerAppListAdapter listAdapter;
     private ArrayList<UserConnectionStatus> playersList = new ArrayList<>();
 
@@ -75,20 +74,6 @@ public class MainListActivity extends BaseActivity {
         setContentView(R.layout.main_list_activity);
         ButterKnife.bind(this);
         AdminApplication.getAppComponent().inject(this);
-//        try {
-//            ViewConfiguration config = ViewConfiguration.get(this);
-//            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-//            if (menuKeyField != null) {
-//                menuKeyField.setAccessible(true);
-//                menuKeyField.setBoolean(config, false);
-//            }
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-
-        pDialog = new ProgressDialog(MainListActivity.this);
-        pDialog.setMessage("Processing...");
-        pDialog.setCancelable(false);
 
         initUI();
         getPlayersInfo();
@@ -122,14 +107,12 @@ public class MainListActivity extends BaseActivity {
     }
 
     private void getPlayersInfo() {
-        if (pDialog != null) pDialog.show();
         DatabaseReference deviceRef = FirebaseDatabase.getInstance().getReference().child(AppConstant.NODE_DEVICES);
         ChildEventListener deviceListener = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 playersList.add(dataSnapshot.getValue(UserConnectionStatus.class));
                 listAdapter.notifyDataSetChanged();
-                if (pDialog != null) pDialog.dismiss();
             }
 
             @Override
@@ -142,24 +125,20 @@ public class MainListActivity extends BaseActivity {
                     playersList.add(status);
                 }
                 listAdapter.notifyDataSetChanged();
-                if (pDialog != null) pDialog.dismiss();
             }
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
                 playersList.remove(dataSnapshot.getValue(UserConnectionStatus.class));
                 listAdapter.notifyDataSetChanged();
-                if (pDialog != null) pDialog.dismiss();
             }
 
             @Override
             public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                if (pDialog != null) pDialog.dismiss();
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                if (pDialog != null) pDialog.dismiss();
             }
         };
         deviceRef.addChildEventListener(deviceListener);

@@ -4,6 +4,7 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.widget.Button;
 import android.widget.EditText;
@@ -34,6 +35,7 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnFocusChange;
 
 /**
  * Created by Anton
@@ -72,6 +74,7 @@ public class SettingActivity extends BaseActivity {
         PlayerApplication.getAppComponent().inject(this);
         setContentView(R.layout.activity_setting);
         ButterKnife.bind(this);
+        logoutBt.requestFocus();
         loadSettings();
         actionBar.setDeviceId(dataManager.getDeviceId());
     }
@@ -94,7 +97,29 @@ public class SettingActivity extends BaseActivity {
 
     @OnClick(R.id.logout_bt)
     void logoutBtClick() {
+        dataManager.logout();
         finish();
+    }
+
+    @OnFocusChange(R.id.edt_play_time)
+    void onPlayFocusChange(boolean focused) {
+        editTextHandler(edtPlayTime, focused);
+    }
+
+    @OnFocusChange(R.id.edt_pause_time)
+    void onPayseFocusChange(boolean focused) {
+        editTextHandler(edtPauseTime, focused);
+    }
+
+    private void editTextHandler(EditText editText, boolean focused) {
+        if (focused){
+            editText.setTag(editText.getText().toString());
+            editText.setText("");
+        }else{
+            if (TextUtils.isEmpty(editText.getText().toString())){
+                editText.setText((String)editText.getTag());
+            }
+        }
     }
 
     @Override

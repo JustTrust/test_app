@@ -214,7 +214,6 @@ public class NewPlayerActivity extends BaseActivity implements GoogleApiClient.C
         int currentLevel = audioAppManager.getVolumeLevel();
         currentLevel += m_level;
         updateVolume(currentLevel);
-
     }
 
     @OnClick(R.id.btn_volume_down)

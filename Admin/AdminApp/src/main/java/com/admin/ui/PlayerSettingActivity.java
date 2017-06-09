@@ -101,7 +101,7 @@ public class PlayerSettingActivity extends BaseActivity {
         });
 
         btnVolumeUP.setOnClickListener(v -> {
-            if (Integer.valueOf(txtVolume.getText().toString()) < 15)
+            if (Integer.valueOf(txtVolume.getText().toString()) < 9)
                 volume_level = Integer.valueOf(txtVolume.getText().toString()) + 1;
             else
                 Toast.makeText(PlayerSettingActivity.this, "Reached Maximum Limit", Toast.LENGTH_SHORT).show();

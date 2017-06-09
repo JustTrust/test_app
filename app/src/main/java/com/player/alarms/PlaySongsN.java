@@ -36,7 +36,7 @@ public class PlaySongsN {
     private int mPlayerStatus = STATUS_NONE;
     private int minuteStartTime;
     private int minuteEndTime;
-    private int mainVolume;
+    private int mainVolume = 15;
     private int pauseCounter = 0;
     private int playCounter = 0;
 
@@ -114,6 +114,7 @@ public class PlaySongsN {
     public void unMute() {
         if (m_player != null) {
             m_player.setVolume(mainVolume, mainVolume);
+            audioAppManager.setVolumeLevel(mainVolume);
         }
     }
 

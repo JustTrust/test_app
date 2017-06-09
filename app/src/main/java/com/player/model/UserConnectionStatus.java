@@ -4,7 +4,7 @@ package com.player.model;
 public class UserConnectionStatus {
     public String deviceName;
     public String deviceID;
-    public Boolean gpsEnabled;
+    public boolean gpsEnabled;
     public String strSong;
     public String latitude;
     public String longitude;
@@ -37,5 +37,9 @@ public class UserConnectionStatus {
         this.isPlaying = isPlaying;
         this.remain = remain;
         this.volume = volume;
+    }
+
+    public boolean isEmpty() {
+        return deviceID == null || deviceName == null;
     }
 }
